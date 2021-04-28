@@ -1,0 +1,117 @@
+/**
+  * Creado por: Brayan Devia Machado
+  * Última actualización: 13/04/2021 17:40
+  * Utilidad: Crea una opportunitie si un Lead creado ya tiene previamente oportunidades como (Closed won/Closed lost)
+  *	Empresa: velaio.com
+  * Versión: 1.3.0
+  * Ref: crm/checkPreviousOpportunities.dg
+  */
+/// ============================ TESTING ============================== ///
+// leadId = "3094687000088748007";
+/// =========================== PRODUCCIÓN ============================ ///
+// Mapeo de Lead
+lead = zoho.crm.getRecordById("Leads",leadId);
+email = lead.getJSON("Email");
+fullName = lead.getJSON("Full_Name");
+boat = lead.getJSON("Boat_Size");
+mobile = lead.getJSON("Mobile");
+desiredDate = lead.getJSON("Desired_Booking_Date");
+passengers = lead.getJSON("Part_Size");
+occasion = lead.getJSON("Occassion");
+service = lead.getJSON("Choose_a_Service");
+source = lead.getJSON("Lead_Source");
+// owner to email
+owner = lead.getJSON("Owner").getJSON("email");
+ownerName = lead.getJSON("Owner").getJSON("name");
+if(isNull(passengers))
+{
+	passengers = 0;
+}
+// Search opportunities
+searchOppResponse = invokeurl
+[
+	url :"https://www.zohoapis.com/crm/v2/Potentials/search?criteria=(Email:equals:" + email + ")"
+	type :GET
+	connection:"conncrm"
+];
+// info searchOppResponse;
+haveData = !isNull(searchOppResponse);
+if(haveData)
+{
+	opportunities = searchOppResponse.getJSON("data");
+	haveClosedWon = false;
+	haveClosedLost = false;
+	for each  opportunitie in opportunities
+	{
+		if(haveClosedWon || haveClosedLost)
+		{
+			break;
+		}
+		stage = opportunitie.getJSON("Stage");
+		if(stage == "Closed Won")
+		{
+			haveClosedWon = true;
+		}
+		else if(stage == "Closed Lost")
+		{
+			haveClosedLost = true;
+		}
+	}
+	if(haveClosedWon || haveClosedLost)
+	{
+		clientId = opportunities.get(0).getJSON("Contact_Name").getJSON("id");
+		newOpportunitie = {"Email":email,"Mobile":mobile,"Boat_Size":boat,"Occassion":occasion,"Passangers":passengers,"Choose_a_Service":service,"Desired_Booking_Date":desiredDate,"Contact_Name":clientId,"Lead_Source":source};
+		if(haveClosedWon)
+		{
+			dealName = fullName + " / " + boat + " / Past Client";
+			newOpportunitie.put("Deal_Name",dealName);
+			newOpportunitie.put("Type","Existing Business");
+			newOpportunitie.put("Stage","New Opportunity - Past Client");
+		}
+		else if(haveClosedLost)
+		{
+			dealName = fullName + " / " + boat + " / Opportunity lost in past";
+			newOpportunitie.put("Deal_Name",dealName);
+			newOpportunitie.put("Type","New Business");
+			newOpportunitie.put("Stage","New Opportunity - Lost in the Past");
+		}
+		// info newOpportunitie;
+		// opportunitieCreated = zoho.crm.createRecord("Potentials",newOpportunitie);
+		opportunitieCreated = zoho.crm.bulkCreate("Potentials",{newOpportunitie});
+		info "Opportunitie created...";
+		info opportunitieCreated;
+		opportunitieId = opportunitieCreated.getJSON("details").getJSON("id");
+		// send email
+		if(haveClosedWon)
+		{
+			// comentado porque tira error en VSCODE (descomentar!)
+			// sendmail
+			// [
+			// 	from :zoho.adminuserid
+			// 	to :owner,"bdevia@velaio.com"
+			// 	subject :"Past client sent requeriment notification"
+			// 	message :"<h1>Hi " + ownerName + ", A new opportunitie has been created!</h1><p>A client who already bought us is interested in a new rental. Take it ASAP!</p></br><p>see here: <a href='https://crm.zoho.com/crm/org663381021/tab/Potentials/" + opportunitieId + "'>https://crm.zoho.com/crm/org663381021/tab/Potentials/" + opportunitieId + "</a></p>"
+			// ]
+		}
+		else if(haveClosedLost)
+		{
+			// comentado porque tira error en VSCODE (descomentar!)
+			// sendmail
+			// [
+			// 	from :zoho.adminuserid
+			// 	to :owner,"bdevia@velaio.com"
+			// 	subject :"Lost client sent requeriment notification"
+			// 	message :"<h1>Hi " + ownerName + ", A new opportunitie has been created!</h1><p>A lead that previously did not buy is interested in a new rental, be careful!</p></br><p>see here: <a href='https://crm.zoho.com/crm/org663381021/tab/Potentials/" + opportunitieId + "'>https://crm.zoho.com/crm/org663381021/tab/Potentials/" + opportunitieId + "</a></p>"
+			// ]
+		}
+		// Delete lead
+		response = invokeurl
+		[
+			url :"https://www.zohoapis.com/crm/v2/Leads?ids=" + leadId + "&wf_trigger=true"
+			type :DELETE
+			connection:"conncrm"
+		];
+		info "Lead deleted...";
+		info response;
+	}
+}

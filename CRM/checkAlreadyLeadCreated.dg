@@ -1,0 +1,63 @@
+/**
+  * Creado por: Brayan Devia Machado
+  * Última actualización: 27/03/2021 17:07
+  * Utilidad: Verifica si se crea un lead con un cliente existente (correo), asigna la nueva información a Notas del lead existente y elimina la creación nueva (evita duplicados).
+  *	Empresa: velaio.com
+  * Versión: 1.2.0
+  * Ref: crm/checkAlreadyLeadCreated.dart
+  */
+// ================ PRUEBAS ===========================================
+/*
+email = "test@velaio.com";
+serviceSelected = "test";
+serviceLinkreference = "test http ref";
+leadId = "000000000";
+*/
+// ====================================================================
+/// Variables de uso
+if(stripePayment == "")
+{
+	stripePayment = "Not";
+}
+noteTitle = "New lead created by " + email + ".";
+noteDescription = "New lead create today by the same user. Service: " + serviceSelected + ", desc: " + serviceLinkreference + ", stripe payment amount: " + stripePayment + ".";
+updateStatus = Map();
+updateStatus.put("Lead_Status","Start pre-qualification");
+/// Busca en Leads registros que coincidan con el correo del cliente
+queryParams = "(Email:equals:" + email + ")";
+leadsRecords = zoho.crm.searchRecords("Leads",queryParams);
+if(leadsRecords.size() > 1)
+{
+	/**
+	 * Si existe un lead, toma el id del primer registro
+	 * Crea una nota con la información a crear del nuevo Lead
+	 * y asigna la nota al Lead existente (evita duplicidad)
+	 */
+	info leadsRecords;
+	firstLeadIndex = leadsRecords.size() - 1;
+	// primer registro creado
+	firstLead = leadsRecords.get(firstLeadIndex);
+	firstLeadId = firstLead.getJSON("id");
+	// info "======== Crear nota ========";
+	noteMap = Map();
+	noteMap.put("Parent_Id",firstLeadId);
+	noteMap.put("Note_Title",noteTitle);
+	noteMap.put("Note_Content",noteDescription);
+	noteMap.put("se_module","Leads");
+	noteCreate = zoho.crm.createRecord("Notes",noteMap);
+	//info "======== Actualizar campo check ========";
+	updateStatus.put("Past_lead",true);
+	zoho.crm.updateRecord("Leads",firstLeadId,updateStatus);
+	/// Elimina registro de lead entrante duplicado
+	response = invokeurl
+	[
+		url :"https://www.zohoapis.com/crm/v2/Leads?ids=" + leadId + "&wf_trigger=true"
+		type :DELETE
+		connection:"conncrm"
+	];
+	info response;
+}
+else
+{
+	zoho.crm.updateRecord("Leads",leadId,updateStatus);
+}

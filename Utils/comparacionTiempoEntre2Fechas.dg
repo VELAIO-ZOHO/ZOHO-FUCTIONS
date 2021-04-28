@@ -1,0 +1,35 @@
+/*
+	CAPTURAR LA DIFERENCIA DE TIEMPO
+	Problema con: dateTimeValue.timeBetween(now), Este devuelve el valor, pero omite
+	la posción en caso de diferencia cero. Es decir, si la diferencia es 1 segundo,
+	devolverá: "1", si la diferencia es 1 hora, devolverá "1", lo cual no sirve.
+	debería ser 00:00:01 si es segundo, o 01:00:00 si es por hora.
+*/
+fl_createdTime = "2021-04-01 16:10:12";
+compareTime = "2021-04-01 16:10:13";
+timeElapsed = fl_createdTime.compareTime(compareTime);
+info "tiempo original: " + timeElapsed;
+
+timeElapsed = fl_createdTime.timeBetween(compareTime).toList(":");
+if ( timeElapsed.size() == 1)
+{
+	timeElapsed = timeElapsed.get(0) +":00:00";
+	info "sólo hay hora: " + timeElapsed;
+}
+else if ( timeElapsed.size() == 2)
+{
+	timeElapsed = timeElapsed.get(0) + ":" + timeElapsed.get(1) + ":00";
+	info "sólo hay hora y minutos: " + timeElapsed;
+} else 
+{
+	timeElapsed = timeElapsed.get(0) + ":" + timeElapsed.get(1) +":"+timeElapsed.get(2);
+	info "Tiempo transcurrido: " + timeElapsed;
+}
+
+// Horas transcurridas
+hoursElapsed = hoursBetween(fl_createdTime,compareTime);
+info "Horas transcurridas:"+hoursElapsed;
+
+// Días transcurridos
+daysElapsed = (hoursElapsed / 24).round(0);
+info "Días transcurridos: "+daysElapsed;

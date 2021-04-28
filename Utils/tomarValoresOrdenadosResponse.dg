@@ -1,0 +1,22 @@
+data = [{"no": "1","FL": [{ "val": "CustomModule3 Name", "content": "843" },{ "val": "Candidato_ID", "content": "594922000005285003" }, { "val": "Candidato", "content": "Mario Angel Heredia" }, { "val": "Oferta_ID", "content": "594922000005227079" }, { "val": "Oferta", "content": "SUPERVISOR" }]}, { "no": "2", "FL": [{ "val": "CustomModule3 Name", "content": "824" }, { "val": "Candidato_ID", "content": "594922000005285003" }, { "val": "Candidato", "content": "Mario Angel Heredia" }, { "val": "Oferta_ID", "content": "594922000005227079" }, { "val": "Oferta", "content": "SUPERVISOR" }]}, { "no": "3", "FL": [{ "val": "CustomModule3 Name", "content": "800" }, { "val": "Candidato_ID", "content": "594922000005285003" }, { "val": "Candidato", "content": "Mario Angel Heredia" }, { "val": "Oferta_ID", "content": "594922000005227079" }, { "val": "Oferta", "content": "SUPERVISOR" }]}];
+
+// longitudData = data.size();
+listaDataIds = List();
+
+for each item in data
+{
+	dataIdNumber = item.getJSON("FL").get(0).getJSON("content");
+	listaDataIds.add(dataIdNumber);
+}
+
+info listaDataIds;
+
+listaDataIdsOrdenados = listaDataIds.sort();
+info listaDataIdsOrdenados;
+
+contador = 0;
+for each dataId in listaDataIdsOrdenados
+{
+	dataIndex = listaDataIds.indexOf(dataId);
+	info dataIndex;
+}

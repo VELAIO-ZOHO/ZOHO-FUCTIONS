@@ -1,0 +1,20 @@
+/**
+  * Creado por: Brayan Devia Machado
+  * Última actualización: 10/04/2021 09:46
+  * Utilidad: Actualiza el Amount de una oportunidad creada en stage Online...
+  *	Empresa: velaio.com
+  * Versión: 1.0.0
+  * Ref: crm/addStripeAmountToOpportunitie.dg
+  */
+/// ============================ TESTING ============================== ///
+opportId = "3094687000088221126";
+/// =========================== PRODUCCIÓN ============================ ///
+// obtiene datos de oportunidad
+opportunitie = zoho.crm.getRecordById("Potentials", opportId);
+// obtiene el pago
+stripePaymentAmount = opportunitie.getJSON("Stripe_Payment_Amount");
+updateAmount = Map();
+updateAmount.put("Amount", stripePaymentAmount.toNumber());
+// Lo actualiza en campo Amount
+updateResp = zoho.crm.updateRecord("Potentials", opportId, updateAmount);
+info updateResp;

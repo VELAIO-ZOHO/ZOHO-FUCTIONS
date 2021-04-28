@@ -1,0 +1,474 @@
+{
+	"CustomModule3": {
+		"row": [{
+			"no": "1",
+			"FL": [{
+				"val": "CUSTOMMODULE3_ID",
+				"content": "594922000005250501"
+			}, {
+				"val": "CustomModule3 Name",
+				"content": "test-5090"
+			}, {
+				"val": "SMOWNERID",
+				"content": "594922000000309003"
+			}, {
+				"val": "CustomModule3 Owner",
+				"content": "Ofertas de Empleo"
+			}, {
+				"val": "SMCREATORID",
+				"content": "594922000000309003"
+			}, {
+				"val": "Created By",
+				"content": "Ofertas de Empleo"
+			}, {
+				"val": "MODIFIEDBY",
+				"content": "594922000000309003"
+			}, {
+				"val": "Modified By",
+				"content": "Ofertas de Empleo"
+			}, {
+				"val": "Created Time",
+				"content": "2021-03-31 22:48:23"
+			}, {
+				"val": "Modified Time",
+				"content": "2021-03-31 22:48:23"
+			}, {
+				"val": "Last Activity Time",
+				"content": "2021-03-31 22:48:23"
+			}, {
+				"val": "Associated Tags",
+				"content": "null"
+			}, {
+				"val": "Tiempo transcurrido",
+				"content": "null"
+			}, {
+				"val": "Horas transcurridas",
+				"content": "null"
+			}, {
+				"val": "Estado anterior",
+				"content": "Asociado"
+			}, {
+				"val": "Indice",
+				"content": "null"
+			}, {
+				"val": "Estado",
+				"content": "En estudio de seguridad"
+			}, {
+				"val": "Etapa",
+				"content": "null"
+			}, {
+				"val": "Estado final",
+				"content": "false"
+			}, {
+				"val": "Días transcurridos",
+				"content": "null"
+			}, {
+				"val": "Candidato_ID",
+				"content": "594922000005249592"
+			}, {
+				"val": "Candidato",
+				"content": "Gustavo A. Borjas V."
+			}, {
+				"val": "Oferta_ID",
+				"content": "594922000005139141"
+			}, {
+				"val": "Oferta",
+				"content": "ASESOR ESPECIALIZADO"
+			}, {
+				"val": "Minutos transcurridos",
+				"content": "null"
+			}]
+		}, {
+			"no": "2",
+			"FL": [{
+				"val": "CUSTOMMODULE3_ID",
+				"content": "594922000005261245"
+			}, {
+				"val": "CustomModule3 Name",
+				"content": "test-5089"
+			}, {
+				"val": "SMOWNERID",
+				"content": "594922000000309003"
+			}, {
+				"val": "CustomModule3 Owner",
+				"content": "Ofertas de Empleo"
+			}, {
+				"val": "SMCREATORID",
+				"content": "594922000000309003"
+			}, {
+				"val": "Created By",
+				"content": "Ofertas de Empleo"
+			}, {
+				"val": "MODIFIEDBY",
+				"content": "594922000000309003"
+			}, {
+				"val": "Modified By",
+				"content": "Ofertas de Empleo"
+			}, {
+				"val": "Created Time",
+				"content": "2021-03-31 22:47:32"
+			}, {
+				"val": "Modified Time",
+				"content": "2021-03-31 22:47:32"
+			}, {
+				"val": "Last Activity Time",
+				"content": "2021-03-31 22:47:32"
+			}, {
+				"val": "Associated Tags",
+				"content": "null"
+			}, {
+				"val": "Tiempo transcurrido",
+				"content": "null"
+			}, {
+				"val": "Horas transcurridas",
+				"content": "null"
+			}, {
+				"val": "Estado anterior",
+				"content": "null"
+			}, {
+				"val": "Indice",
+				"content": "null"
+			}, {
+				"val": "Estado",
+				"content": "Asociado"
+			}, {
+				"val": "Etapa",
+				"content": "null"
+			}, {
+				"val": "Estado final",
+				"content": "false"
+			}, {
+				"val": "Días transcurridos",
+				"content": "null"
+			}, {
+				"val": "Candidato_ID",
+				"content": "594922000005249592"
+			}, {
+				"val": "Candidato",
+				"content": "Gustavo A. Borjas V."
+			}, {
+				"val": "Oferta_ID",
+				"content": "594922000005139141"
+			}, {
+				"val": "Oferta",
+				"content": "ASESOR ESPECIALIZADO"
+			}, {
+				"val": "Minutos transcurridos",
+				"content": "null"
+			}]
+		}, {
+			"no": "3",
+			"FL": [{
+				"val": "CUSTOMMODULE3_ID",
+				"content": "594922000005264008"
+			}, {
+				"val": "CustomModule3 Name",
+				"content": "test-5094"
+			}, {
+				"val": "SMOWNERID",
+				"content": "594922000000309003"
+			}, {
+				"val": "CustomModule3 Owner",
+				"content": "Ofertas de Empleo"
+			}, {
+				"val": "SMCREATORID",
+				"content": "594922000000309003"
+			}, {
+				"val": "Created By",
+				"content": "Ofertas de Empleo"
+			}, {
+				"val": "MODIFIEDBY",
+				"content": "594922000000309003"
+			}, {
+				"val": "Modified By",
+				"content": "Ofertas de Empleo"
+			}, {
+				"val": "Created Time",
+				"content": "2021-04-01 02:14:54"
+			}, {
+				"val": "Modified Time",
+				"content": "2021-04-01 02:14:54"
+			}, {
+				"val": "Last Activity Time",
+				"content": "2021-04-01 02:14:54"
+			}, {
+				"val": "Associated Tags",
+				"content": "null"
+			}, {
+				"val": "Tiempo transcurrido",
+				"content": "3:26:30"
+			}, {
+				"val": "Horas transcurridas",
+				"content": "3"
+			}, {
+				"val": "Estado anterior",
+				"content": "En estudio de seguridad"
+			}, {
+				"val": "Indice",
+				"content": "null"
+			}, {
+				"val": "Estado",
+				"content": "Contratado"
+			}, {
+				"val": "Etapa",
+				"content": "CONTRATACIÓN"
+			}, {
+				"val": "Estado final",
+				"content": "false"
+			}, {
+				"val": "Días transcurridos",
+				"content": "0"
+			}, {
+				"val": "Candidato_ID",
+				"content": "594922000005249592"
+			}, {
+				"val": "Candidato",
+				"content": "Gustavo A. Borjas V."
+			}, {
+				"val": "Oferta_ID",
+				"content": "594922000005139141"
+			}, {
+				"val": "Oferta",
+				"content": "ASESOR ESPECIALIZADO"
+			}, {
+				"val": "Minutos transcurridos",
+				"content": "null"
+			}]
+		}]
+	}
+},
+{
+	"no": "1",
+	"FL": [{
+		"val": "CUSTOMMODULE3_ID",
+		"content": "594922000005250501"
+	}, {
+		"val": "CustomModule3 Name",
+		"content": "test-5090"
+	}, {
+		"val": "SMOWNERID",
+		"content": "594922000000309003"
+	}, {
+		"val": "CustomModule3 Owner",
+		"content": "Ofertas de Empleo"
+	}, {
+		"val": "SMCREATORID",
+		"content": "594922000000309003"
+	}, {
+		"val": "Created By",
+		"content": "Ofertas de Empleo"
+	}, {
+		"val": "MODIFIEDBY",
+		"content": "594922000000309003"
+	}, {
+		"val": "Modified By",
+		"content": "Ofertas de Empleo"
+	}, {
+		"val": "Created Time",
+		"content": "2021-03-31 22:48:23"
+	}, {
+		"val": "Modified Time",
+		"content": "2021-03-31 22:48:23"
+	}, {
+		"val": "Last Activity Time",
+		"content": "2021-03-31 22:48:23"
+	}, {
+		"val": "Associated Tags",
+		"content": "null"
+	}, {
+		"val": "Tiempo transcurrido",
+		"content": "null"
+	}, {
+		"val": "Horas transcurridas",
+		"content": "null"
+	}, {
+		"val": "Estado anterior",
+		"content": "Asociado"
+	}, {
+		"val": "Indice",
+		"content": "null"
+	}, {
+		"val": "Estado",
+		"content": "En estudio de seguridad"
+	}, {
+		"val": "Etapa",
+		"content": "null"
+	}, {
+		"val": "Estado final",
+		"content": "false"
+	}, {
+		"val": "Días transcurridos",
+		"content": "null"
+	}, {
+		"val": "Candidato_ID",
+		"content": "594922000005249592"
+	}, {
+		"val": "Candidato",
+		"content": "Gustavo A. Borjas V."
+	}, {
+		"val": "Oferta_ID",
+		"content": "594922000005139141"
+	}, {
+		"val": "Oferta",
+		"content": "ASESOR ESPECIALIZADO"
+	}, {
+		"val": "Minutos transcurridos",
+		"content": "null"
+	}]
+}, /*RECORD*/ , {
+	"no": "2",
+	"FL": [{
+		"val": "CUSTOMMODULE3_ID",
+		"content": "594922000005261245"
+	}, {
+		"val": "CustomModule3 Name",
+		"content": "test-5089"
+	}, {
+		"val": "SMOWNERID",
+		"content": "594922000000309003"
+	}, {
+		"val": "CustomModule3 Owner",
+		"content": "Ofertas de Empleo"
+	}, {
+		"val": "SMCREATORID",
+		"content": "594922000000309003"
+	}, {
+		"val": "Created By",
+		"content": "Ofertas de Empleo"
+	}, {
+		"val": "MODIFIEDBY",
+		"content": "594922000000309003"
+	}, {
+		"val": "Modified By",
+		"content": "Ofertas de Empleo"
+	}, {
+		"val": "Created Time",
+		"content": "2021-03-31 22:47:32"
+	}, {
+		"val": "Modified Time",
+		"content": "2021-03-31 22:47:32"
+	}, {
+		"val": "Last Activity Time",
+		"content": "2021-03-31 22:47:32"
+	}, {
+		"val": "Associated Tags",
+		"content": "null"
+	}, {
+		"val": "Tiempo transcurrido",
+		"content": "null"
+	}, {
+		"val": "Horas transcurridas",
+		"content": "null"
+	}, {
+		"val": "Estado anterior",
+		"content": "null"
+	}, {
+		"val": "Indice",
+		"content": "null"
+	}, {
+		"val": "Estado",
+		"content": "Asociado"
+	}, {
+		"val": "Etapa",
+		"content": "null"
+	}, {
+		"val": "Estado final",
+		"content": "false"
+	}, {
+		"val": "Días transcurridos",
+		"content": "null"
+	}, {
+		"val": "Candidato_ID",
+		"content": "594922000005249592"
+	}, {
+		"val": "Candidato",
+		"content": "Gustavo A. Borjas V."
+	}, {
+		"val": "Oferta_ID",
+		"content": "594922000005139141"
+	}, {
+		"val": "Oferta",
+		"content": "ASESOR ESPECIALIZADO"
+	}, {
+		"val": "Minutos transcurridos",
+		"content": "null"
+	}]
+}, /*RECORD*/ , {
+	"no": "3",
+	"FL": [{
+		"val": "CUSTOMMODULE3_ID",
+		"content": "594922000005264008"
+	}, {
+		"val": "CustomModule3 Name",
+		"content": "test-5094"
+	}, {
+		"val": "SMOWNERID",
+		"content": "594922000000309003"
+	}, {
+		"val": "CustomModule3 Owner",
+		"content": "Ofertas de Empleo"
+	}, {
+		"val": "SMCREATORID",
+		"content": "594922000000309003"
+	}, {
+		"val": "Created By",
+		"content": "Ofertas de Empleo"
+	}, {
+		"val": "MODIFIEDBY",
+		"content": "594922000000309003"
+	}, {
+		"val": "Modified By",
+		"content": "Ofertas de Empleo"
+	}, {
+		"val": "Created Time",
+		"content": "2021-04-01 02:14:54"
+	}, {
+		"val": "Modified Time",
+		"content": "2021-04-01 02:14:54"
+	}, {
+		"val": "Last Activity Time",
+		"content": "2021-04-01 02:14:54"
+	}, {
+		"val": "Associated Tags",
+		"content": "null"
+	}, {
+		"val": "Tiempo transcurrido",
+		"content": "3:26:30"
+	}, {
+		"val": "Horas transcurridas",
+		"content": "3"
+	}, {
+		"val": "Estado anterior",
+		"content": "En estudio de seguridad"
+	}, {
+		"val": "Indice",
+		"content": "null"
+	}, {
+		"val": "Estado",
+		"content": "Contratado"
+	}, {
+		"val": "Etapa",
+		"content": "CONTRATACIÓN"
+	}, {
+		"val": "Estado final",
+		"content": "false"
+	}, {
+		"val": "Días transcurridos",
+		"content": "0"
+	}, {
+		"val": "Candidato_ID",
+		"content": "594922000005249592"
+	}, {
+		"val": "Candidato",
+		"content": "Gustavo A. Borjas V."
+	}, {
+		"val": "Oferta_ID",
+		"content": "594922000005139141"
+	}, {
+		"val": "Oferta",
+		"content": "ASESOR ESPECIALIZADO"
+	}, {
+		"val": "Minutos transcurridos",
+		"content": "null"
+	}]
+}

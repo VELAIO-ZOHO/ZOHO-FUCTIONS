@@ -1,0 +1,294 @@
+
+/// Config APIs
+moduleName = "CustomModule3";
+headers = Map();
+headers.put("content-type","application/x-www-form-urlencoded");
+/// URIs
+uriGetRecords = 'https://recruit.zoho.com/recruit/private/json/' + moduleName + '/getRecords?scope=recruitapi&version=2&newFormat=2&sortColumnString=' + moduleName + '+Name&fromIndex=0&toIndex=15';
+uriStatesHistory = "https://recruit.zoho.com/recruit/private/xml/" + moduleName + "/addRecords?scope=recruitapi&newFormat=1&duplicateCheck=2&version=4";
+statusHistoryReponse = Map();
+/// Busca todos los registros en Historial de estados
+statusHistoryReponse = invokeurl
+[
+	url :uriGetRecords
+	type :POST
+	parameters:Map()
+	headers:headers
+	connection:"oauthzrecruit"
+];
+info "statusHistoryReponse:";
+info statusHistoryReponse;
+// obtenemos la lista con los registros
+data = statusHistoryReponse.getJSON('response').getJSON('result').getJSON(moduleName).getJSON('row');
+//info "data: " + data.size();
+directorio = Map();
+/// Para cada registro crearemos un directorio sólo con valores de Candidato y oferta únicos
+/// Para luego buscar los registros de cada candidato y realizar la operación de rellenar datos
+for each  record in data
+{
+	listFL = List();
+	listFL = record.getJSON('FL');
+	// tomamos el candidatoId y ofertaId
+	record_candidatoId = listFL.get(18).getJSON('content');
+	record_candidatoNombre = listFL.get(19).getJSON('content');
+	record_ofertaId = listFL.get(20).getJSON('content');
+	record_ofertaNombre = listFL.get(21).getJSON('content');
+	// La llave del directorio será el candidatoId y ofertaId
+	nombreRegistro = record_candidatoId + "_" + record_ofertaId;
+	// Si no existe el registro en el directorio, lo agrega
+	if(!directorio.containKey(nombreRegistro))
+	{
+		nuevo_candidatoId = {'id':record_candidatoId};
+		nuevo_candidatoNombre = {'nombre':record_candidatoNombre};
+		nueva_ofertaId = {'ofertaId':record_ofertaId};
+		nueva_ofertaNombre = {'oferta':record_ofertaNombre};
+		/**
+      * EJEMPLO:
+      * "594922000005285003_594922000005227079": [
+      *   { "id": "594922000005285003" },
+      *   { "nombre": "Mario Angel Heredia Durango" },
+      *   { "ofertaId": "594922000005227079" },
+      *   { "oferta": "SUPERVISOR" }
+      * ]
+      */
+		directorio.put(nombreRegistro,{nuevo_candidatoId,nuevo_candidatoNombre,nueva_ofertaId,nueva_ofertaNombre});
+	}
+}
+//info directorio;
+//info "Filtrados únicos: " + directorio.size();
+/// Búsqueda de registro por cada candidato del directorio ****************
+uriGetStatus = "https://recruit.zoho.com/recruit/private/json/" + moduleName + "/getSearchRecords?scope=recruitapi&version=2&newFormat=2&selectColumns=All&fromIndex=1&toIndex=200";
+contador = 1;
+for each  candidatoOferta in directorio
+{
+	/// tomamos ids y nombres de los elementos
+	item_candidatoId = candidatoOferta.get(0).getJSON("id");
+	item_candidatoNombre = candidatoOferta.get(1).getJSON("nombre");
+	item_ofertaId = candidatoOferta.get(2).getJSON("ofertaId");
+	/// Buscamos todos los registros de ese candidato
+	queryParams = "searchCondition=(Candidato|=|" + item_candidatoNombre + ")";
+	candidatosOfertaResponse = Map();
+	candidatosOfertaResponse = invokeurl
+	[
+		url :uriGetStatus
+		type :POST
+		parameters:queryParams
+		headers:headers
+		connection:"oauthzrecruit"
+	];
+	//info candidatosOfertaResponse;
+	// tomamos los registros, los ordenamos de menor a mayor y guardamos en una lista.
+	dataCandidato = candidatosOfertaResponse.getJSON('response').getJSON('result').getJSON(moduleName).getJSON('row');
+	listaDataIds = List();
+
+  multiplesRegistros1 = !isNull(dataCandidato);
+
+	// toma los Ids en desorden y los guarda en una lista
+	for each  item in dataCandidato
+	{
+		dataIdNumero = item.getJSON("FL").get(1).getJSON("content");
+		listaDataIds.add(dataIdNumero);
+	}
+	// info "lista desord";
+	// info listaDataIds;
+	// ordenamos los Ids (menor a mayor)
+	listaDataIdsOrdenados = listaDataIds.sort();
+	// info "lista orde";
+	// info listaDataIdsOrdenados;
+	/// Tomamos cada id ordenado y lo buscamos en los desordenados
+	/// Con esto sabemos la posición del id de menor a mayor en la dataCandidato
+	for each  dataId in listaDataIdsOrdenados
+	{
+		dataIndex = listaDataIds.indexOf(dataId);
+		candidatoFLs = dataCandidato.get(dataIndex).getJSON("FL");
+		// campos a usar
+		fl_candidateId = "";
+		fl_candidateStatus = "";
+		fl_jobId = "";
+		fl_createdTime = "";
+		previousState = "";
+		stage = "";
+		finalStatus = "false";
+		timeElapsed = "00:00:00";
+		daysElapsed = 0;
+		hoursElapsed = 0;
+		for each  recordFL in candidatoFLs
+		{
+			val = recordFL.getJSON("val");
+			if(val == "Candidato_ID")
+			{
+				fl_candidateId = recordFL.getJSON("content");
+			}
+			if(val == "Estado")
+			{
+				fl_candidateStatus = recordFL.getJSON("content");
+			}
+			if(val == "Oferta_ID")
+			{
+				fl_jobId = recordFL.getJson('content');
+			}
+			if(val == "Created Time")
+			{
+				fl_createdTime = recordFL.getJson('content');
+			}
+		}
+		if(fl_candidateStatus == "Descartado" || fl_candidateStatus == "Descalificado" || fl_candidateStatus == "Seleccionado en contratación")
+		{
+			finalStatus = "true";
+		}
+		/// Setea la etapa según su estado
+		statusNuevo = {'Nuevo'};
+		statusReclutamiento = {'Asociado','Activar flujo de trabajo','En validación de BD externas'};
+		statusSeleccion = {'Preselección','Solicita información adicional/Documentos','Programar entrevista de selección','En entrevista de selección','En Prueba de selección','Entrevista de selección programada','Interview to be scheduled','Interview-Scheduled'};
+		statusNegocio = {'Programar entrevista (negocio)','Entrevista negocio programada','En prueba técnica (Negocio)'};
+		statusCliente = {'Enviar a revisión del cliente','En revisión del cliente masivo','En revisión del cliente individual','Programar entrevista (Cliente)','Entrevista cliente programada','Prueba técnica (cliente)','Aprobado por el cliente','Rechazado por el cliente'};
+		statusContratacion = {'En estudio de seguridad','Semillero para contratar','Seleccionado en contrtación','En exámenes médicos','Descartado en contratación','En contratación','Contratado'};
+		statusDescartado = {'Descalificado','Descartado','Desasociado'};
+		if(statusNuevo.contains(fl_candidateStatus))
+		{
+			stage = "NUEVO";
+		}
+		else if(statusReclutamiento.contains(fl_candidateStatus))
+		{
+			stage = "RECLUTAMIENTO";
+		}
+		else if(statusSeleccion.contains(fl_candidateStatus))
+		{
+			stage = "SELECCIÓN";
+		}
+		else if(statusNegocio.contains(fl_candidateStatus))
+		{
+			stage = "NEGOCIO";
+		}
+		else if(statusCliente.contains(fl_candidateStatus))
+		{
+			stage = "CLIENTE";
+		}
+		else if(statusContratacion.contains(fl_candidateStatus))
+		{
+			stage = "CONTRATACIÓN";
+		}
+		else if(statusDescartado.contains(fl_candidateStatus))
+		{
+			stage = "DESCARTADO";
+		}
+		xmlData = 'xmlData=<' + moduleName + '><row no="1"><FL val="Estado final"><![CDATA[' + finalStatus + ']]></FL><FL val="Estado">' + fl_candidateStatus + '</FL><FL val="Candidato_ID">' + fl_candidateId + '</FL><FL val="Oferta_ID">' + fl_jobId + '</FL><FL val="Estado anterior">' + previousState + '</FL><FL val="Tiempo transcurrido">' + timeElapsed + '</FL><FL val="Días transcurridos">' + daysElapsed + '</FL><FL val="Horas transcurridas">' + hoursElapsed + '</FL><FL val="Etapa">' + stage + '</FL></row></' + moduleName + '>';
+		// info "=====PRIMER REGISTRO CANDIDATO=====";
+		// info xmlData;
+		//// si es el primer registro, guardamos todo por defecto
+		response = invokeurl
+		[
+			url :uriStatesHistory
+			type :POST
+			parameters:xmlData
+			headers:headers
+			connection:"oauthzrecruit"
+		];
+    // info listaDataIdsOrdenados;
+    for each  dataId_2 in listaDataIdsOrdenados
+		{
+      dataIndex_2 = listaDataIds.indexOf(dataId_2);
+      candidatoFLs_2 = dataCandidato.get(dataIndex_2).getJSON("FL");
+      // info candidatoFLs_2;
+      // campos a usar
+			fl_candidateId_2 = "";
+			fl_candidateStatus_2 = "";
+			fl_jobId_2 = "";
+			fl_createdTime_2 = "";
+			previousState_2 = "";
+			stage_2 = "";
+			finalStatus_2 = "false";
+			timeElapsed_2 = "00:00:00";
+			daysElapsed_2 = 0;
+			hoursElapsed_2 = 0;
+
+      // tieneMultipleRegistros = !isNull(candidatoFLs_2.get(0));
+      // info "multilples reg: " + tieneMultipleRegistros;
+
+      for each  recordFL_2 in candidatoFLs_2
+			{
+				val_2 = recordFL_2.getJSON("val");
+				if(val_2 == "Candidato_ID")
+				{
+					fl_candidateId_2 = recordFL_2.getJSON("content");
+				}
+				if(val_2 == "Estado")
+				{
+					fl_candidateStatus_2 = recordFL_2.getJSON("content");
+				}
+        if(val_2 == "Oferta_ID")
+				{
+					fl_jobId_2 = recordFL_2.getJSON("content");
+				}
+				if(val_2 == "Created Time")
+				{
+					fl_createdTime_2 = recordFL_2.getJSON("content");
+				}
+			}
+      // info fl_jobId_2;
+      if(fl_candidateId == fl_candidateId_2 && fl_jobId == fl_jobId_2 && dataId_2.toNumber() > dataId.toNumber())
+			{
+        // info "El candidato tiene otro registro con el mismo trabajo";
+				previousState_2 = fl_candidateStatus;
+				// tiempo transcurrido
+				timeElapsed_2 = fl_createdTime.timeBetween(now);
+				hoursElapsed_2 = hoursBetween(fl_createdTime,now);
+				if(hoursElapsed >= 24)
+				{
+					daysElapsed_2 = (hoursElapsed_2 / 24).floor();
+					hoursElapsed_2 = hoursElapsed_2 - daysElapsed_2 * 24;
+				}
+        if(fl_candidateStatus_2 == "Descartado" || fl_candidateStatus_2 == "Descalificado" || fl_candidateStatus_2 == "Seleccionado en contratación")
+        {
+          finalStatus_2 = "true";
+        }
+        if(statusNuevo.contains(fl_candidateStatus_2))
+        {
+          stage = "NUEVO";
+        }
+        else if(statusReclutamiento.contains(fl_candidateStatus_2))
+        {
+          stage = "RECLUTAMIENTO";
+        }
+        else if(statusSeleccion.contains(fl_candidateStatus_2))
+        {
+          stage = "SELECCIÓN";
+        }
+        else if(statusNegocio.contains(fl_candidateStatus_2))
+        {
+          stage = "NEGOCIO";
+        }
+        else if(statusCliente.contains(fl_candidateStatus_2))
+        {
+          stage = "CLIENTE";
+        }
+        else if(statusContratacion.contains(fl_candidateStatus_2))
+        {
+          stage = "CONTRATACIÓN";
+        }
+        else if(statusDescartado.contains(fl_candidateStatus_2))
+        {
+          stage = "DESCARTADO";
+        }
+				xmlData2 = 'xmlData=<' + moduleName + '><row no="1"><FL val="Estado final"><![CDATA[' + finalStatus_2 + ']]></FL><FL val="Estado">' + fl_candidateStatus_2 + '</FL><FL val="Candidato_ID">' + fl_candidateId_2 + '</FL><FL val="Oferta_ID">' + fl_jobId_2 + '</FL><FL val="Estado anterior">' + previousState_2 + '</FL><FL val="Tiempo transcurrido">' + timeElapsed_2 + '</FL><FL val="Días transcurridos">' + daysElapsed_2 + '</FL><FL val="Horas transcurridas">' + hoursElapsed_2 + '</FL><FL val="Etapa">' + stage_2 + '</FL></row></' + moduleName + '>';
+        // info "=====REGISTRO POSTERIOR CANDIDATO=====";
+				// info xmlData2;
+				response = invokeurl
+				[
+					url :uriStatesHistory
+					type :POST
+					parameters:xmlData
+					headers:headers
+					connection:"oauthzrecruit"
+				];
+        info response;
+      }
+    }
+	}
+	/// limitador de procesos
+	// contador = contador + 1;
+	// if(contador == 3)
+	// {
+	// 	break;
+	// }
+}

@@ -1,0 +1,117 @@
+/// SCRIPT ORIGINAL **************************************************
+uriStatesHistory = "https://recruit.zoho.com/recruit/private/xml/CustomModule17/addRecords?scope=recruitapi&newFormat=1&duplicateCheck=2&version=4";
+uriGetStatus = "https://recruit.zoho.com/recruit/private/json/CustomModule17/getSearchRecords?scope=recruitapi&version=2&newFormat=2&selectColumns=All&fromIndex=1&toIndex=100";
+/*
+candidate_id = "594922000000796143";
+jobId = "594922000001529103";
+candidateStatus = "Semillero para contratar";
+*/
+candidate = zoho.recruit.getRecordById("Candidates",candidate_id);
+firstName = "";
+lastName = "";
+fullName = "";
+if(!isNull(candidate.getJSON("First Name")))
+{
+	firstName = candidate.getJSON("First Name");
+}
+if(!isNull(candidate.getJSON("Last Name")))
+{
+	lastName = candidate.getJSON("Last Name");
+}
+fullName = firstName + " " + lastName;
+postFields = "searchCondition=(Candidato|=|" + fullName.toString() + ")";
+headers = Map();
+headers.put("content-type","application/x-www-form-urlencoded");
+allStatusResponse = Map();
+//allStatusResponse = postUrl(uriGetStatus,postFields,headers,false);
+allStatusResponse = invokeurl
+[
+	url :uriGetStatus
+	type :POST
+	parameters:postFields
+	headers:headers
+	connection:"oauthzrecruit"
+];
+statusRecords = allStatusResponse.getJSON("response").getJSON("result");
+beforeState = "";
+if(!isNull(statusRecords))
+{
+	statusRecords = statusRecords.getJSON("CustomModule17").getJSON("row");
+	hasMultiplesStatus = !isNull(statusRecords.get(0));
+	statusList = List();
+	if(hasMultiplesStatus)
+	{
+		//When has a multiples Work Flow rules  
+		higher = 0;
+		for each  records in statusRecords
+		{
+			recordsFL = records.getJSON("FL");
+			stateTemp = "";
+			jobIdTemp = "";
+			stateListCandidate_id = "";
+			//Getting the fields of the record
+			for each  record in recordsFL
+			{
+				val = record.getJson('val');
+				/*START: WORK FLOW INFORMATIONS FIELDS*/
+				if(val == "Estado")
+				{
+					stateTemp = record.getJson('content');
+				}
+				if(val == "CustomModule17 Name")
+				{
+					indexE = record.getJson('content');
+				}
+				if(val == "Candidato_ID")
+				{
+					stateListCandidate_id = record.getJson('content');
+				}
+				if(val == "Oferta_ID")
+				{
+					jobIdTemp = record.getJson('content');
+				}
+			}
+			if(stateListCandidate_id.toNumber() == candidate_id && jobId == jobIdTemp.toNumber())
+			{
+				if(indexE > higher)
+				{
+					higher = indexE.toNumber();
+					beforeState = stateTemp;
+				}
+			}
+		}
+	}
+	else
+	{
+		statusRecords = statusRecords.getJSON("FL");
+		//Getting the fields of the record
+		for each  record in statusRecords
+		{
+			val = record.getJson('val');
+			/*START: WORK FLOW INFORMATIONS FIELDS*/
+			if(val == "Estado")
+			{
+				beforeState = record.getJson('content');
+			}
+		}
+	}
+}
+finalStatus = "false";
+if(candidateStatus == "Descartado" || candidateStatus == "Descalificado" || candidateStatus == "Seleccionado en contratación")
+{
+	finalStatus = "true";
+}
+xmlData = 'xmlData=<CustomModule17><row no="1"><FL val="Estado final"><![CDATA[' + finalStatus + ']]></FL><FL val="Estado">' + candidateStatus + '</FL><FL val="Candidato_ID">' + candidate_id + '</FL><FL val="Oferta_ID">' + jobId + '</FL><FL val="Estado anterior">' + beforeState + '</FL></row></CustomModule17>';
+headers = Map();
+headers.put("content-type","application/x-www-form-urlencoded");
+response = Map();
+//response = postUrl(uriStatesHistory,xmlData,headers,false);
+response = invokeurl
+[
+	url :uriStatesHistory
+	type :POST
+	parameters:xmlData
+	headers:headers
+	connection:"oauthzrecruit"
+];
+info response;
