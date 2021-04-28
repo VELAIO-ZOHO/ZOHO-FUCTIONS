@@ -1,50 +1,58 @@
-opportunitie = zoho.crm.getRecordById("Potentials",Opp_id);
+opportunitieId = 3094687000090083067;
+opportunitie = zoho.crm.getRecordById("Potentials",opportunitieId);
+// info opportunitie;
 //Manejo de fechas
-meses_nombre = Map();
-meses_nombre.put("Jan","01");
-meses_nombre.put("Feb","02");
-meses_nombre.put("Mar","03");
-meses_nombre.put("Apr","04");
-meses_nombre.put("May","05");
-meses_nombre.put("Jun","06");
-meses_nombre.put("Jul","07");
-meses_nombre.put("Aug","08");
-meses_nombre.put("Sep","09");
-meses_nombre.put("Oct","10");
-meses_nombre.put("Nov","11");
-meses_nombre.put("Dec","12");
+monthNames = {
+  'Jan': '01',
+  'Feb': '02',
+  'Mar': '03',
+  'Apr': '04',
+  'May': '05',
+  'Jun': '06',
+  'Jul': '07',
+  'Aug': '08',
+  'Sep': '09',
+  'Oct': '10',
+  'Nov': '11',
+  'Dic': '12'
+};
 // ================================ CHARTERT START DATE ================================ //
-start_1 = opportunitie.get("Charter_Date_2").toTime();
-start_2 = start_1.toList(" ");
-start_3 = start_1.toList("-");
-start_4 = opportunitie.get("Charter_Date_2").toList("T");
-start_5 = start_4.get(1).toList("-");
-start_6 = start_5.get(0).toList(":");
+// Obtiene fecha Charter start date en formato: 28-Aug-2021 00:00:00
+charterStartDate = opportunitie.get("Charter_Date_2");
+charterStartDateSplit = charterStartDate.toList("T");
+startDate = charterStartDateSplit.get(0).remove("-");
+startTime = charterStartDateSplit.get(1).remove(":");
+charterStartDateFormat = startDate + "T" + startTime;
 // ================================ CHARTERT END DATE ================================ //
-end_1 = opportunitie.get("Charter_end_date").toTime();
-end_2 = end_1.toList(" ");
-end_3 = end_1.toList("-");
-end_4 = opportunitie.get("Charter_end_date").toList("T");
-end_5 = end_4.get(1).toList("-");
-end_6 = end_5.get(0).toList(":");
-
-StartDate_tmp = replaceFirst(start_2.get(0),start_3.get(1),meses_nombre.get(start_3.get(1)));
-EndDate_tmp = replaceFirst(end_2.get(0),end_3.get(1),meses_nombre.get(end_3.get(1)));
-StartDate = StartDate_tmp + " " + start_5.get(0);
-EndDate = EndDate_tmp + " " + end_5.get(0);
-//Fin manejo de fechas
+charterEndDate = opportunitie.get("Charter_end_date");
+charterEndDateSplit = charterEndDate.toList("T");
+endDate = charterEndDateSplit.get(0).remove("-");
+endTime = charterEndDateSplit.get(1).remove(":");
+charterEndDateFormat = endDate + "T" + endTime;
+// ================================ CALENDAR EVENT CREATE
 description = "Service for " + opportunitie.get("Deal_Name") + ", Occasion by " + opportunitie.get("Occassion") + " in " + opportunitie.get("Choose_a_Service") + " reference " + opportunitie.get("Boat_reference") + ", size " + opportunitie.get("Boat_Size1") + ", for " + opportunitie.get("Passangers") + " passengers.";
-info_calendar = Map();
-info_calendar.put("StartDate",StartDate);
-info_calendar.put("EndDate",EndDate);
-info_calendar.put("sum",opportunitie.get("Deal_Name"));
-info_calendar.put("loc","Sea");
-info_calendar.put("desc",description);
-info_calendar_vendor = Map();
-info_calendar_vendor.put("StartDate",StartDate);
-info_calendar_vendor.put("EndDate",EndDate);
-info_calendar_vendor.put("sum",opportunitie.get("Deal_Name"));
-info_calendar_vendor.put("loc","Sea");
-info_calendar_vendor.put("desc","");
-create_calendar_logistic = zoho.calendar.createEvent("Logistic",info_calendar);
-create_calendar_vendor = zoho.calendar.createEvent("Vendors",info_calendar_vendor);
+
+// fecha ahora debe ser en formato: 20200201T153000+0530
+dateAndTimeMap = {
+	'timezone': "Etc/GMT-4",
+	'start': charterStartDateFormat,
+	'end': charterEndDateFormat
+};
+
+startEventDetails = {
+  'title': opportunitie.get("Deal_Name"),
+  'dateandtime': dateAndTimeMap,
+  'description': description
+};
+
+vendorEventDetails = {
+  'title': opportunitie.get("Deal_Name"),
+  'dateandtime': dateAndTimeMap,
+  'description': ''
+};
+
+// UID de Calendarios de David Prime
+createdEvent_Logistic = zoho.calendar.createEvent("7756459eaebe43f4abd51b6433a4e345",{"eventdata":startEventDetails});
+createdEvent_Vendors = zoho.calendar.createEvent("286ee02f5cc549d9b8d406a5e3415166",{"eventdata":vendorEventDetails});
+// info createdEvent_Logistic;
+// info createdEvent_Vendors;

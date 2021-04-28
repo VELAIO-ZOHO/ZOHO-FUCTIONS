@@ -1,10 +1,10 @@
 /**
   * Creado por: Brayan Devia Machado
-  * Última actualización: 07/04/2021 18:26
+  * Última actualización: 28/04/2021 17:31
   * Utilidad: Registra cambio de estado de Candidatos y tiempo transcurrido
   *	Empresa: velaio.com
-  * Versión: 2.1.0
-  * Ref: recruit/save_candidate_status-v2.dart
+  * Versión: 2.1.1
+  * Ref: recruit/save_candidate_status-v2.dg
   */
 // ====================================== PRUEBAS =============================
 //candidate_id = "594922000005285003";
@@ -23,6 +23,7 @@ lastName = "";
 fullName = "";
 previousState = "";
 stage = "";
+previousStage = "";
 finalStatus = "false";
 // Búsqueda de registro del candidato para tomar nombre completo
 candidate = zoho.recruit.getRecordById("Candidates",candidate_id);
@@ -80,6 +81,7 @@ if(haveData)
 			listFL = record.getJSON("FL");
 			fl_candidateId = "";
 			fl_candidateStatus = "";
+			fl_candidateStage = "";
 			fl_jobId = "";
 			fl_createdTime = "";
 			fl_recordId = 0;
@@ -96,6 +98,10 @@ if(haveData)
 				if(val == "Estado")
 				{
 					fl_candidateStatus = item.getJSON("content");
+				}
+				if(val == "Etapa")
+				{
+					fl_candidateStage = item.getJSON("content");
 				}
 				if(val == "Oferta_ID")
 				{
@@ -125,6 +131,7 @@ if(haveData)
 				{
 					lastRecordId = fl_recordId;
 					previousState = fl_candidateStatus;
+					previousStage = fl_candidateStage;
 					// tiempo transcurrido
 					timeElapsed = fl_createdTime.timeBetween(now);
 					hoursElapsed = hoursBetween(fl_createdTime,now);
@@ -170,19 +177,15 @@ if(candidateStatus == "Descartado" || candidateStatus == "Descalificado" || cand
 	finalStatus = "true";
 }
 /// Setea la etapa según su estado
-statusNuevo = {'Nuevo'};
-statusReclutamiento = {'Asociado','Activar flujo de trabajo','En validación de BD externas'};
+statusReclutamiento = {'Nuevo', 'Asociado','Activar flujo de trabajo','En validación de BD externas', 'Desasociado'};
 statusSeleccion = {'Preselección','Solicita información adicional/Documentos','Programar entrevista de selección','En entrevista de selección','En Prueba de selección','Entrevista de selección programada','Interview to be scheduled','Interview-Scheduled'};
 statusNegocio = {'Programar entrevista (negocio)','Entrevista negocio programada','En prueba técnica (Negocio)'};
 statusCliente = {'Enviar a revisión del cliente','En revisión del cliente masivo','En revisión del cliente individual','Programar entrevista (Cliente)','Entrevista cliente programada','Prueba técnica (cliente)','Aprobado por el cliente','Rechazado por el cliente'};
 statusContratacion = {'En estudio de seguridad','Semillero para contratar','Seleccionado en contratación','En exámenes médicos','Descartado en contratación','En contratación','Contratado'};
-statusDescartado = {'Descalificado','Descartado','Desasociado'};
+// Descartado y Desacalificado => Queda en la etapa del estado anterior (Jaime 28/04/21)
+statusDescartado = {'Descalificado','Descartado',};
 // Validación
-if(statusNuevo.contains(candidateStatus))
-{
-	stage = "NUEVO";
-}
-else if(statusReclutamiento.contains(candidateStatus))
+if(statusReclutamiento.contains(candidateStatus))
 {
 	stage = "RECLUTAMIENTO";
 }
@@ -204,7 +207,7 @@ else if(statusContratacion.contains(candidateStatus))
 }
 else if(statusDescartado.contains(candidateStatus))
 {
-	stage = "DESCARTADO";
+	stage = previousStage;
 }
 /// construye XML Data para enviar a petición POST/PUT y Guardar
 xmlData = 'xmlData=<' + moduleName + '><row no="1"><FL val="Estado final"><![CDATA[' + finalStatus + ']]></FL><FL val="Estado">' + candidateStatus + '</FL><FL val="Candidato_ID">' + candidate_id + '</FL><FL val="Oferta_ID">' + jobId + '</FL><FL val="Estado anterior">' + previousState + '</FL><FL val="Tiempo transcurrido">' + timeElapsed + '</FL><FL val="Días transcurridos">' + daysElapsed + '</FL><FL val="Horas transcurridas">' + hoursElapsed + '</FL><FL val="Etapa">' + stage + '</FL><FL val="Nombre oferta">' + jobName + '</FL></row></' + moduleName + '>';
