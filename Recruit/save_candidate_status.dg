@@ -183,7 +183,7 @@ statusNegocio = {'Programar entrevista (negocio)','Entrevista negocio programada
 statusCliente = {'Enviar a revisión del cliente','En revisión del cliente masivo','En revisión del cliente individual','Programar entrevista (Cliente)','Entrevista cliente programada','Prueba técnica (cliente)','Aprobado por el cliente','Rechazado por el cliente'};
 statusContratacion = {'En estudio de seguridad','Semillero para contratar','Seleccionado en contratación','En exámenes médicos','Descartado en contratación','En contratación','Contratado'};
 // Descartado y Desacalificado => Queda en la etapa del estado anterior (Jaime 28/04/21)
-statusDescartado = {'Descalificado','Descartado',};
+statusDescartado = {'Descalificado','Descartado'};
 // Validación
 if(statusReclutamiento.contains(candidateStatus))
 {

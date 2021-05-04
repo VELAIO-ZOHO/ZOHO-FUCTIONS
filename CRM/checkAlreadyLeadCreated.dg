@@ -1,18 +1,19 @@
 /**
   * Creado por: Brayan Devia Machado
-  * Última actualización: 27/03/2021 17:07
+  * Última actualización: 01/05/2021 09:07
   * Utilidad: Verifica si se crea un lead con un cliente existente (correo), asigna la nueva información a Notas del lead existente y elimina la creación nueva (evita duplicados).
   *	Empresa: velaio.com
-  * Versión: 1.2.0
-  * Ref: crm/checkAlreadyLeadCreated.dart
+  * Versión: 1.3.0
+  * Ref: crm/checkAlreadyLeadCreated.dg
   */
 // ================ PRUEBAS ===========================================
-/*
-email = "test@velaio.com";
-serviceSelected = "test";
-serviceLinkreference = "test http ref";
-leadId = "000000000";
-*/
+// email = "mandymarie44@yahoo.com";
+// tiene 7
+// leadId = 3094687000090892004;
+// email = "test@test28.com"; // tiene 1
+// serviceSelected = "test";
+// serviceLinkreference = "test http ref";
+// leadId = "000000000";
 // ====================================================================
 /// Variables de uso
 if(stripePayment == "")
@@ -21,29 +22,48 @@ if(stripePayment == "")
 }
 noteTitle = "New lead created by " + email + ".";
 noteDescription = "New lead create today by the same user. Service: " + serviceSelected + ", desc: " + serviceLinkreference + ", stripe payment amount: " + stripePayment + ".";
-updateStatus = Map();
-updateStatus.put("Lead_Status","Start pre-qualification");
+updateStatus = {"Lead_Status":"Start pre-qualification"};
 /// Busca en Leads registros que coincidan con el correo del cliente
 queryParams = "(Email:equals:" + email + ")";
 leadsRecords = zoho.crm.searchRecords("Leads",queryParams);
+// info leadsRecords;
 if(leadsRecords.size() > 1)
 {
+	firstCreatedDate = "";
+	firstLeadId = "";
+	for each  lead in leadsRecords
+	{
+		recordLeadId = lead.getJSON("id");
+		leadCreatedDate = lead.getJSON("Created_Time");
+		dateSplit = leadCreatedDate.toList("T");
+		// ['2021-04-29','22:42:30-04:00']
+		timeSplit = dateSplit.get(1).toList("-");
+		// ['22:42:30','04:00']
+		leadCreatedDate = dateSplit.get(0) + " " + timeSplit.get(0);
+		// '2021-04-29 22:42:30'
+		if(firstCreatedDate == "")
+		{
+			firstCreatedDate = leadCreatedDate;
+			firstLeadId = recordLeadId;
+		}
+		else
+		{
+			if(leadCreatedDate.toTime() < firstCreatedDate.toTime())
+			{
+				firstCreatedDate = leadCreatedDate;
+				firstLeadId = recordLeadId;
+			}
+		}
+	}
+	// info "fecha min: " + firstCreatedDate;
+	// info "fecha min ID: " + firstLeadId;
 	/**
 	 * Si existe un lead, toma el id del primer registro
 	 * Crea una nota con la información a crear del nuevo Lead
 	 * y asigna la nota al Lead existente (evita duplicidad)
 	 */
-	info leadsRecords;
-	firstLeadIndex = leadsRecords.size() - 1;
-	// primer registro creado
-	firstLead = leadsRecords.get(firstLeadIndex);
-	firstLeadId = firstLead.getJSON("id");
-	// info "======== Crear nota ========";
-	noteMap = Map();
-	noteMap.put("Parent_Id",firstLeadId);
-	noteMap.put("Note_Title",noteTitle);
-	noteMap.put("Note_Content",noteDescription);
-	noteMap.put("se_module","Leads");
+	// CREACIÓN DE NOTA
+	noteMap = {"Parent_Id":firstLeadId,"Note_Title":noteTitle,"Note_Content":noteDescription,"se_module":"Leads"};
 	noteCreate = zoho.crm.createRecord("Notes",noteMap);
 	//info "======== Actualizar campo check ========";
 	updateStatus.put("Past_lead",true);
@@ -51,7 +71,7 @@ if(leadsRecords.size() > 1)
 	/// Elimina registro de lead entrante duplicado
 	response = invokeurl
 	[
-		url :"https://www.zohoapis.com/crm/v2/Leads?ids=" + leadId + "&wf_trigger=true"
+		url :"https://www.zohoapis.com/crm/v2.1/Leads?ids=" + leadId + "&wf_trigger=false"
 		type :DELETE
 		connection:"conncrm"
 	];

@@ -52,7 +52,7 @@ vendorEventDetails = {
 };
 
 // UID de Calendarios de David Prime
-createdEvent_Logistic = zoho.calendar.createEvent("7756459eaebe43f4abd51b6433a4e345",{"eventdata":startEventDetails});
-createdEvent_Vendors = zoho.calendar.createEvent("286ee02f5cc549d9b8d406a5e3415166",{"eventdata":vendorEventDetails});
+createdEvent_Logistic = zoho.calendar.createEvent("7756459eaebe43f4abd51b6433a4e345",{"eventdata":startEventDetails}, "crm_calendar");
+createdEvent_Vendors = zoho.calendar.createEvent("286ee02f5cc549d9b8d406a5e3415166",{"eventdata":vendorEventDetails}, "crm_calendar");
 // info createdEvent_Logistic;
 // info createdEvent_Vendors;
