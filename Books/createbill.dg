@@ -1,0 +1,40 @@
+invoiceID = invoice.get("invoice_id");
+invoicedate = invoice.get("date").toDate();
+invoicecharterdate = invoice.get("custom_fields").get(0).get("value").toDate();
+organizationID = organization.get("organization_id");
+invNo = invoice.get("invoice_number");
+billNo = invNo.replaceFirst("INV","BILLl");
+customerID = invoice.get("customer_id");
+invDestails = zoho.books.getRecordsByID("Invoices",organizationID,invoiceID).get("invoice");
+//info invDestails;
+iList = List();
+lineItems = invDestails.get("line_items");
+i = 0;
+for each  f in lineItems
+{
+	if(i < 1)
+	{
+		imap = Map();
+		qty = f.get("quantity");
+		rate = f.get("rate");
+		itemID = f.get("item_id");
+		quantity = f.get("quantity");
+		taxID = f.get("tax_id");
+		item = zoho.books.getRecordsByID("items",organizationID,itemID).get("item");
+		imap.put("item_id",itemID);
+		imap.put("rate",item.get("purchase_rate"));
+		imap.put("quantity",qty);
+		imap.put("tax_id",taxID);
+		imap.put("customer_id",customerID);
+		iList.add(imap);
+	}
+	i = i + 1;
+}
+json = Map();
+json.put("vendor_id","1198953000004319424");
+json.put("bill_number",billNo);
+json.put("line_items",iList);
+json.put("date",invoicedate);
+json.put("due_date",invoicecharterdate);
+response = zoho.books.createRecord("Bills",organizationID,json);
+info response;
