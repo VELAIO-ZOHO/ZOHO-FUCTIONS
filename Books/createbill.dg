@@ -1,40 +1,42 @@
-invoiceID = invoice.get("invoice_id");
-invoicedate = invoice.get("date").toDate();
-invoicecharterdate = invoice.get("custom_fields").get(0).get("value").toDate();
-organizationID = organization.get("organization_id");
-invNo = invoice.get("invoice_number");
-billNo = invNo.replaceFirst("INV","BILLl");
-customerID = invoice.get("customer_id");
-invDestails = zoho.books.getRecordsByID("Invoices",organizationID,invoiceID).get("invoice");
-//info invDestails;
-iList = List();
-lineItems = invDestails.get("line_items");
+invoiceId = invoice.get("invoice_id");
+invoiceDate = invoice.get("date").toDate();
+invoiceCharterDate = invoice.get("custom_fields").get(0).get("value").toDate();
+organizationId = organization.get("organization_id");
+invoiceNumber = invoice.get("invoice_number");
+billNumber = invoiceNumber.replaceFirst("INV","BILLl");
+customerId = invoice.get("customer_id");
+invoiceDetails = zoho.books.getRecordsByID("Invoices",organizationId,invoiceId, "basic_cnn").get("invoice");
+lineItems = invoiceDetails.get("line_items");
+itemsList = List();
 i = 0;
-for each  f in lineItems
+for each lineItem in lineItems
 {
 	if(i < 1)
 	{
 		imap = Map();
-		qty = f.get("quantity");
-		rate = f.get("rate");
-		itemID = f.get("item_id");
-		quantity = f.get("quantity");
-		taxID = f.get("tax_id");
-		item = zoho.books.getRecordsByID("items",organizationID,itemID).get("item");
-		imap.put("item_id",itemID);
-		imap.put("rate",item.get("purchase_rate"));
-		imap.put("quantity",qty);
-		imap.put("tax_id",taxID);
-		imap.put("customer_id",customerID);
-		iList.add(imap);
+		quantity = lineItem.get("quantity");
+		rate = lineItem.get("rate");
+		itemId = lineItem.get("item_id");
+		taxId = lineItem.get("tax_id");
+		item = zoho.books.getRecordsByID("items",organizationId,itemId,"basic_cnn").get("item");
+		itemPurchaseRate = item.get("purchase_rate");
+		itemMap = {
+			"item_id": itemId,
+			"rate": itemPurchaseRate,
+			"quantity": quantity,
+			"tax_id": taxId,
+			"customer_id": customerId
+		};
+		itemsList.add(itemMap);
 	}
 	i = i + 1;
 }
-json = Map();
-json.put("vendor_id","1198953000004319424");
-json.put("bill_number",billNo);
-json.put("line_items",iList);
-json.put("date",invoicedate);
-json.put("due_date",invoicecharterdate);
-response = zoho.books.createRecord("Bills",organizationID,json);
+json = {
+	"vendor_id": "1198953000004319424",
+	"bill_number": billNumber,
+	"line_items": itemsList,
+	"date": invoiceDate,
+	"due_date": invoiceCharterDate
+};
+response = zoho.books.createRecord("Bills",organizationId,json, "basic_cnn");
 info response;
