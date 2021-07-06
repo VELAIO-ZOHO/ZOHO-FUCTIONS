@@ -1,0 +1,104 @@
+
+/**
+  * Cuando entra un Sale Order (en aldelante SO), este identifica los items que tiene asociados,
+  * luego busca otros SO estos items, si los tiene, individualmente los remueve y los vuelve a agregar.
+  * 
+  * Esto corrige un bug visual que actualmente tiene Zoho Books/Inventory que no actualiza en tiempo real
+  * los campos personalizados asociados a un SO.
+  * 
+  * Desarrollado por: velaio.com
+  */
+try 
+{
+	salesorderID = salesorder.get("salesorder_id");
+	organizationID = organization.get("organization_id");
+	// salesorderID = "2268646000014446266"; // for test purpose only
+	// Búsqueda del SO entrante
+	// entrySaleOrder = zoho.books.getRecordsByID("salesorders",organizationID,salesorderID,"zbooks_cnn");
+	// entrySaleOrderItems = entrySaleOrder.get("salesorder").get("line_items");
+	entrySaleOrderItems = salesorder.get("line_items");
+	info "Items en SO " + salesorderID + " a recorrer: (" + entrySaleOrderItems.size() + ")";
+	// Recorremos los items del SO entrante
+	for each  item in entrySaleOrderItems
+	{
+		itemId = item.get("item_id");
+		quantitySaled = item.get("quantity");
+		quantitysInAllDrafts = 0;
+		// Búsqueda de todos los SO - Draft
+		allSalesOrdersDrafts = zoho.books.getRecords("salesorders",organizationID,{'status':'draft'},"zbooks_cnn");
+		salesOrdersDrafts = allSalesOrdersDrafts.get("salesorders");
+		info "Recorriendo item en " + salesOrdersDrafts.size() + " SO en Draft encontrados";
+		// Recorremos todos los SO - Draft
+		for each  saleOrderDraftResume in salesOrdersDrafts
+		{
+			saleOrderId = saleOrderDraftResume.get("salesorder_id");
+			saleOrderDraftById = zoho.books.getRecordsByID("salesorders",organizationID,saleOrderId,"zbooks_cnn");
+			itemsInDraft = saleOrderDraftById.get("salesorder").get("line_items");
+			// Recorremos todos los items de los SO - Draft
+			index = 0;
+			itemToRemove = Collection();
+			itemsNotRemoved = List();
+			if(itemsInDraft.size() > 1)
+			{
+				for each  item_2 in itemsInDraft
+				{
+					// variables de uso
+					itemId_2 = item_2.get("item_id");
+					itemPutFormat = {"item_id":item_2.get("item_id").toNumber(),"name":item_2.get("name"),"description":item_2.get("description"),"rate":item_2.get("rate"),"quantity":item_2.get("quantity"),"unit":item_2.get("unit"),"tax_id":item_2.get("tax_id"),"tax_name":item_2.get("tax_name"),"tax_type":item_2.get("tax_type"),"tax_percentage":item_2.get("tax_percentage"),"item_total":item_2.get("item_total"),"warehouse_id":item_2.get("warehouse_id").toNumber()};
+					// si contiene el mismo item del SO entrante suma la cant. al total
+					if(itemId_2 == itemId)
+					{
+						// Si el item encontrado es igual al item del SO inicial, añadimos para eliminar
+						itemToRemove = itemPutFormat;
+					}
+					else
+					{
+						// Si el item encontrado no es igual al item del SO inicial, agregamos a lista blanca
+						itemsNotRemoved.add(itemPutFormat);
+					}
+				}
+				if(!itemToRemove.isEmpty())
+				{
+					info "El SO " + saleOrderId + " tiene " + itemsInDraft.size() + " items";
+					info "Permanecen intactos " + itemsNotRemoved.size() + " items";
+					// Actualizamos con lista blanca
+					soRemovedItemsResp = zoho.books.updateRecord("salesorders",organizationID,saleOrderId,{'line_items':itemsNotRemoved},"zbooks_cnn");
+					// Volvemos a agregar el item al SO (corrección de glitch visual)
+					itemsNotRemoved.add(itemToRemove);
+					soAddedItemsResp = zoho.books.updateRecord("salesorders",organizationID,saleOrderId,{'line_items':itemsNotRemoved},"zbooks_cnn");
+					info "item (" + item_2.get("name") + ") eliminado y agregado nuevamente al SO";
+					info "-----------------------------------------------------------------------";
+					// info soAddedItemsResp;
+				}
+			}
+			else
+			{
+				item_2 = itemsInDraft.get(0);
+				itemId_2 = item_2.get("item_id");
+				if(itemId_2 == itemId)
+				{
+					// El SO sólo tiene 1 item, lo agregamos a eliminar
+					info "El SO " + saleOrderId + " sólo tiene un item";
+					info "Agregado item falso Doppelgänger y eliminando item original";
+					itemPutFormat = {"item_id":item_2.get("item_id").toNumber(),"name":item_2.get("name"),"description":item_2.get("description"),"rate":item_2.get("rate"),"quantity":item_2.get("quantity"),"unit":item_2.get("unit"),"tax_id":item_2.get("tax_id"),"tax_name":item_2.get("tax_name"),"tax_type":item_2.get("tax_type"),"tax_percentage":item_2.get("tax_percentage"),"item_total":item_2.get("item_total"),"warehouse_id":item_2.get("warehouse_id").toNumber()};
+					itemToRemove = itemPutFormat;
+					// Como no es posible eliminar el único item que tiene el SO, se agrega primero un item cualquiera
+					itemDoppelganger = {"item_id":2268646000014446002,"name":"Doppelgänger (Don't delete)","description":"Item associated with workflows, do not delete!","rate":1000.0,"quantity":1,"unit":"pcs","tax_id":"","item_total":1000.0};
+					itemsNotRemoved.add(itemDoppelganger);
+					soRemovedItemsResp = zoho.books.updateRecord("salesorders",organizationID,saleOrderId,{'line_items':itemsNotRemoved},"zbooks_cnn");
+					// Vuelve a agregar el item al SO (corrección de glitch visual)
+					itemsNotRemoved = List();
+					itemsNotRemoved.add(itemToRemove);
+					soAddedItemsResp = zoho.books.updateRecord("salesorders",organizationID,saleOrderId,{'line_items':itemsNotRemoved},"zbooks_cnn");
+					info "item (" + item_2.get("name") + ") eliminado y agregado nuevamente al SO";
+					info "-----------------------------------------------------------------------";
+				}
+			}
+		}
+	}
+}
+ catch (e)
+{	info "¡Error al ejecutar la función!";
+	info "SO: " + salesorderID;
+	info e.toString();
+}

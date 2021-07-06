@@ -1,0 +1,30 @@
+potential = zoho.crm.getRecordById("Accounts",4456611000010133189,{},"zcrm");
+info potential;
+return "";
+// searchSalesOrders = zoho.books.getRecords("salesorders","715648898",{"customer_name":customer},"zbooks");
+// salesOrders = searchSalesOrders.get("salesorders");
+// xmlRecord = "<record>";
+// index = 0;
+// for each  saleOrder in salesOrders
+// {
+// 	saleOrderId = saleOrder.get("salesorder_id");
+// 	saleOrderSubStatus = saleOrder.get("current_sub_status");
+// 	saleOrderDate = saleOrder.get("date");
+// 	saleOrderTotal = saleOrder.get("total");
+// 	saleOrderNumber = saleOrder.get("salesorder_number");
+// 	// saleOrderById = zoho.books.getRecordsByID("salesorders", "715648898", saleOrderId, "zbooks").get("salesorder");
+// 	// soItems = saleOrderById.get("line_items");
+// 	// for each item in soItems
+// 	// {
+// 	// 	
+// 	// }
+// 	xmlRecord = xmlRecord + "<row no='" + index + "'><FL link='true' url='https://books.zoho.com/app#/salesorders/" + saleOrderId + "'  val='Sale order reference'>" + saleOrderNumber + "</FL>";
+// 	xmlRecord = xmlRecord + "<FL val='Status'>" + saleOrderSubStatus + "</FL>";
+// 	xmlRecord = xmlRecord + "<FL val='Date'>" + saleOrderDate + "</FL>";
+// 	xmlRecord = xmlRecord + "<FL val='Total'>" + saleOrderTotal + "</FL>";
+// 	xmlRecord = xmlRecord + "</row>";
+// 	index = index + 1;
+// }
+// info xmlRecord + "</record>";
+// // return xmlRecord + "</record>";
+// return "<record><row no='0'><FL val='customer'>" + customer + "</FL><FL val='dealId'>Value2</FL><FL val='Name3'>value3</FL><FL val='Name4'>value4</FL><FL val='Name5'>value5</FL></row><row no='1'><FL val='Name1'>value1</FL><FL val='Name2'>value2</FL><FL val='Name3'>value3</FL><FL val='Name4'>value4</FL><FL val='Name5'>value5</FL></row></record>";

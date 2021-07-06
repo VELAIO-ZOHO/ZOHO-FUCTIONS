@@ -1,3 +1,4 @@
+// Obtiene la información del invoice
 invoiceId = invoice.get("invoice_id");
 invoiceDate = invoice.get("date").toDate();
 invoiceCharterDate = invoice.get("custom_fields").get(0).get("value").toDate();
@@ -5,38 +6,44 @@ organizationId = organization.get("organization_id");
 invoiceNumber = invoice.get("invoice_number");
 billNumber = invoiceNumber.replaceFirst("INV","BILLl");
 customerId = invoice.get("customer_id");
-invoiceDetails = zoho.books.getRecordsByID("Invoices",organizationId,invoiceId, "basic_cnn").get("invoice");
+// Busca los el invoice para tomar datos completos
+invoiceDetails = zoho.books.getRecordsByID("Invoices",organizationId,invoiceId,"basic_connection").get("invoice");
 lineItems = invoiceDetails.get("line_items");
+
+// Crea una lista con los items del invoice (código creado previamente sólo toma el 1er item)
 itemsList = List();
-i = 0;
-for each lineItem in lineItems
+quantity = lineItems.get(0).get("quantity");
+rate = lineItems.get(0).get("rate");
+itemId = lineItems.get(0).get("item_id");
+taxId = lineItems.get(0).get("tax_id");
+itemPurchaseRate = 0;
+itemDescription = "";
+
+// Toma el name o description para la referencia del bill
+if (lineItems.get(0).get("name") == "") 
 {
-	if(i < 1)
-	{
-		imap = Map();
-		quantity = lineItem.get("quantity");
-		rate = lineItem.get("rate");
-		itemId = lineItem.get("item_id");
-		taxId = lineItem.get("tax_id");
-		item = zoho.books.getRecordsByID("items",organizationId,itemId,"basic_cnn").get("item");
-		itemPurchaseRate = item.get("purchase_rate");
-		itemMap = {
-			"item_id": itemId,
-			"rate": itemPurchaseRate,
-			"quantity": quantity,
-			"tax_id": taxId,
-			"customer_id": customerId
-		};
-		itemsList.add(itemMap);
-	}
-	i = i + 1;
+	itemDescription = lineItems.get(0).get("description");
 }
-json = {
-	"vendor_id": "1198953000004319424",
-	"bill_number": billNumber,
-	"line_items": itemsList,
-	"date": invoiceDate,
-	"due_date": invoiceCharterDate
-};
-response = zoho.books.createRecord("Bills",organizationId,json, "basic_cnn");
+else 
+{
+	itemDescription = lineItems.get(0).get("name");
+}
+
+// Si el item no exciste en Inventory, toma el precio del invoice, sino lo trae del item
+if(itemId == "")
+{
+	itemPurchaseRate = lineItems.get(0).get("bcy_rate");
+}
+else
+{
+	item = zoho.books.getRecordsByID("items",organizationId,itemId,"basic_connection").get("item");
+	itemPurchaseRate = item.get("purchase_rate");
+}
+
+// Crea el mapa el item y lo agrega a la lista
+itemMap = {"item_id":itemId,"rate":itemPurchaseRate,"quantity":quantity,"tax_id":taxId,"customer_id":customerId};
+itemsList.add(itemMap);
+// Enviamos json con la creación del Bill
+json = {"vendor_id":"1198953000004319424","reference_number":itemDescription,"bill_number":billNumber,"line_items":itemsList,"date":invoiceDate,"due_date":invoiceCharterDate};
+response = zoho.books.createRecord("Bills",organizationId,json,"basic_connection");
 info response;
