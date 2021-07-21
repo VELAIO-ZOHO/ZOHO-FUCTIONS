@@ -1,0 +1,51 @@
+
+id = salesorder.get("salesorder_id");
+number = salesorder.get("salesorder_number");
+salespersonName = salesorder.get("salesperson_name");
+organizationId = organization.get("organization_id");
+timeStart = now;
+timeEnd = 0;
+totalTime = 0;
+try 
+{
+	info "Sales Order id: " + id;
+	salesorderById = zoho.books.getRecordsByID("salesorders",organizationId,id,"zbooks_cnn").get("salesorder");
+	status = salesorderById.get("current_sub_status");
+	if(status == "draft")
+	{
+		salespersonEmail = salesorderById.get("created_by_email");
+		createdTime = salesorderById.get("created_time");
+		createdTimeSplit = createdTime.toList("T");
+		createdTime_date = createdTimeSplit.get(0);
+		createdTime_hoursSplit = createdTimeSplit.get(1).toList("-");
+		createdTime_hours = createdTime_hoursSplit.get(0);
+		createdTime = createdTime_date + " " + createdTime_hours;
+		createdTime = createdTime.toDateTime();
+		hoursElapsed = hoursBetween(createdTime,now);
+		sendmail
+		[
+			from :zoho.adminuserid
+			to :salespersonEmail
+			subject :"Reminder! you have a Sale Order in Draft Status"
+			message :"Dear " + salespersonName + ", this is a friendly reminder regarding Sales Order #" + number + " that you created " + hoursElapsed + " hours ago and has not been submitted for approval yet. Please be advised that after 72 hours this order will be voided. (you can see here: https://books.zoho.com/app#/salesorders/" + id + ")."
+		]
+		info "Función ejecutada correctamente";
+		info "Correo de recordatorio programado para " + salespersonEmail + " (" + salespersonName + ")";
+		info "-----------------------------------------------";
+		timeEnd = now;
+		totalTime = timeStart.timeBetween(timeEnd);
+		info "Inicio ejecución: " + timeStart;
+		info "Fin ejecución: " + timeEnd;
+		info "Tiempo: " + totalTime;
+	}
+}
+ catch (e)
+{	info "¡Error al ejecutar la función!";
+	info "Sale Order: " + id;
+	info e.toString();
+	timeEnd = now;
+	totalTime = timeStart.timeBetween(timeEnd);
+	info "Inicio ejecución: " + timeStart;
+	info "Fin ejecución: " + timeEnd;
+	info "Tiempo: " + totalTime;
+}

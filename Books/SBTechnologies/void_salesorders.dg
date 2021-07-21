@@ -1,0 +1,94 @@
+
+id = salesorder.get("salesorder_id");
+number = salesorder.get("salesorder_number");
+salespersonName = salesorder.get("salesperson_name");
+organizationId = organization.get("organization_id");
+timeStart = now;
+timeEnd = 0;
+totalTime = 0;
+try 
+{
+	info "Sales Order to void id: " + id;
+	salesorderById = zoho.books.getRecordsByID("salesorders",organizationId,id,"zbooks_cnn").get("salesorder");
+	status = salesorderById.get("current_sub_status");
+	salespersonEmail = salesorderById.get("created_by_email");
+	if(status == "draft")
+	{
+		submitForApproval = invokeurl
+		[
+			url :"https://books.zoho.com/api/v3/salesorders/" + id + "/submit?organization_id=" + organizationId
+			type :POST
+			connection:"zbooks_cnn"
+		];
+		avoided = invokeurl
+		[
+			url :"https://books.zoho.com/api/v3/salesorders/" + id + "/status/void?organization_id=" + organizationId
+			type :POST
+			connection:"zbooks_cnn"
+		];
+		// Envía correo de notificación
+		sendmail
+		[
+			from :zoho.adminuserid
+			to :salespersonEmail
+			subject :"Sales Order #" + number + " has been voided automatically"
+			message :"Dear " + salespersonName + ", this message is to inform you that your sales order #" + number + " has reached the time limit of 72 hours for being on draft status, and since it hasn't been submitted for approval it has been voided (here is the order: https://books.zoho.com/app#/salesorders/" + id + "). Should you have any questions please contact your sales manager."
+		]
+		info "Función ejecutada correctamente";
+		info submitForApproval;
+		info avoided;
+	}
+	/**************************************************************************************************************/
+	/***************************** DUPLICATE THE FUNCTION [update_actual_stock_items] *****************************/
+	/**************************************************************************************************************/
+	entrySaleOrderItems = salesorderById.get("line_items");
+	for each  item in entrySaleOrderItems
+	{
+		itemId = item.get("item_id");
+		quantitySaled = item.get("quantity");
+		quantitysInAllDrafts = 0;
+		allSalesOrdersDrafts = zoho.books.getRecords("salesorders",organizationId,{'status':'draft'},"zbooks_cnn");
+		salesOrdersDrafts = allSalesOrdersDrafts.get("salesorders");
+		for each  saleOrderDraftResume in salesOrdersDrafts
+		{
+			saleOrderId = saleOrderDraftResume.get("salesorder_id");
+			saleOrderDraftById = zoho.books.getRecordsByID("salesorders",organizationId,saleOrderId,"zbooks_cnn");
+			itemsInDraft = saleOrderDraftById.get("salesorder").get("line_items");
+			for each  item_2 in itemsInDraft
+			{
+				itemId_2 = item_2.get("item_id");
+				itemQuantity_2 = item_2.get("quantity");
+				if(itemId_2 == itemId)
+				{
+					quantitysInAllDrafts = quantitysInAllDrafts + itemQuantity_2;
+				}
+			}
+		}
+		updateField_1 = {'custom_fields':{{'label':'Stock in Draft','value':quantitysInAllDrafts}}};
+		itemUpdatedDraft = zoho.books.updateRecord("items",organizationId,itemId,updateField_1,"zbooks_cnn");
+		availableSaleStock = itemUpdatedDraft.get("item").get("actual_available_for_sale_stock");
+		availableCommStock = itemUpdatedDraft.get("item").get("actual_committed_stock");
+		updateField_2 = {'custom_fields':{{'label':'Available for Sale','value':availableSaleStock - quantitysInAllDrafts},{'label':'Committed Stock','value':availableCommStock}}};
+		itemUpdatedStocks = zoho.books.updateRecord("items",organizationId,itemId,updateField_2,"zbooks_cnn");
+		// Log
+		info "All Stock in Draft: " + quantitysInAllDrafts;
+		info "Available for Sale: " + availableSaleStock;
+		info "Committed Stock: " + availableCommStock;
+		info itemUpdatedStocks;
+	}
+	timeEnd = now;
+	totalTime = timeStart.timeBetween(timeEnd);
+	info "Inicio ejecución: " + timeStart;
+	info "Fin ejecución: " + timeEnd;
+	info "Tiempo: " + totalTime;
+}
+ catch (e)
+{	info "¡Error al ejecutar la función!";
+	info "Sale Order: " + id;
+	info e.toString();
+	timeEnd = now;
+	totalTime = timeStart.timeBetween(timeEnd);
+	info "Inicio ejecución: " + timeStart;
+	info "Fin ejecución: " + timeEnd;
+	info "Tiempo: " + totalTime;
+}

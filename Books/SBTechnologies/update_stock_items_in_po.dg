@@ -1,0 +1,66 @@
+
+purchaseorderId = purchaseorder.get("purchaseorder_id");
+purchaseorderStatus = purchaseorder.get("status");
+organizationId = organization.get("organization_id");
+items = purchaseorder.get("line_items");
+timeStart = now;
+timeEnd = 0;
+totalTime = 0;
+try 
+{
+	info "Purchase Order received: " + purchaseorderId;
+	purchaseorderById = zoho.books.getRecordsByID("purchaseorders",organizationId,purchaseorderId,"zbooks_cnn").get("purchaseorder");
+	receivedStatus = purchaseorderById.get("received_status");
+	if(receivedStatus == "received")
+	{
+		for each  item in items
+		{
+			itemId = item.get("item_id");
+			itemById = zoho.books.getRecordsByID("items",organizationId,itemId,"zbooks_cnn").get("item");
+			actualAvailableStock = itemById.get("actual_available_stock");
+			actualCommittedStock = itemById.get("actual_committed_stock");
+			actualAvailableForSaleStock = itemById.get("actual_available_for_sale_stock");
+			stockInDraft = 0;
+			customFields = itemById.get("custom_fields");
+			for each  customField in customFields
+			{
+				cf_label = customField.get("label");
+				cf_value = customField.get("value");
+				if(cf_label == "Stock in Draft")
+				{
+					stockInDraft = cf_value;
+				}
+			}
+			newActualAvailableForSaleStock = actualAvailableForSaleStock - stockInDraft;
+			update = {"custom_fields":{{"label":"Stock on Hand","value":actualAvailableStock},{"label":"Committed Stock","value":actualCommittedStock},{"label":"Available for Sale","value":newActualAvailableForSaleStock}}};
+			itemUpdated = zoho.books.updateRecord("items",organizationId,itemId,update,"zbooks_cnn");
+			if(itemUpdated.get("code") == 0)
+			{
+				info "The PO's is Received";
+				info "Item [ " + item.get("name") + " (" + itemId + ") ] finded!";
+				info "New Stock on Hand value " + actualAvailableStock;
+				info "New Committed Stock value " + actualCommittedStock;
+				info "New Available for Sale value " + newActualAvailableForSaleStock;
+				info "------------------------------------------------";
+			}
+		}
+	}
+	else
+	{
+		info "The PO's status must be received to update the stock";
+	}
+	timeEnd = now;
+	totalTime = timeStart.timeBetween(timeEnd);
+	info "Inicio ejecución: " + timeStart;
+	info "Fin ejecución: " + timeEnd;
+	info "Tiempo: " + totalTime;
+}
+ catch (e)
+{	info "¡Error al ejecutar la fucnión!";
+	info e.toString();
+	timeEnd = now;
+	totalTime = timeStart.timeBetween(timeEnd);
+	info "Inicio ejecución: " + timeStart;
+	info "Fin ejecución: " + timeEnd;
+	info "Tiempo: " + totalTime;
+}
