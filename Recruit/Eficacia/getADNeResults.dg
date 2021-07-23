@@ -1,0 +1,450 @@
+// void getADNeResults(string identificationNumber,string testADNeCompleted,bigint candidateId,string logElenius,string uriADNeResults,string uriADNeResultsPDF,string eleniusSecretKey,string eleniusApiKey) 
+
+/*
+Worflow rule logic
+
+ESCENARIO 1 (ASINCRONICA)
+1- Candidato creado
+2- Notificación 
+3- Envia la prueba diligenciada y se cambia el check en el candidato
+
+REPETIR PARA LOS DOS ESCENARIOS
+4- Es necesario buscar entre todas las ofertas relacionadas al candidato las que estan en estado "asociado" y que no fuesen procesadas.
+5- Obtener el cliente y la oferta por cada registro
+6- Traer los resultados de la prueba por cada oferta y cliente para este candidato en particular
+7- Se marca cuales han sido procesadas.
+
+ESCENARIO 2 (SINCRONO)
+1- El campo "Test ADNe realizado" y el estado es "asociada"
+2- Solo se procesa la oferta para la que esta aplicando
+
+Parametros de la función:
+a.  Candidate ID
+b.  LogElenius
+c.  "Test ADNe realizado"
+*/
+uriGetAssociatedJobOpenings = "http://recruit.zoho.com/recruit/private/json/Candidates/getAssociatedJobOpenings?scope=recruitapi";
+uriLog = "https://recruit.zoho.com/recruit/private/xml/CustomModule6/addRecords?scope=recruitapi&newFormat=1&duplicateCheck=2&version=4";
+uriAddADNeresults = "https://recruit.zoho.com/recruit/private/xml/CustomModule4/addRecords?scope=recruitapi&newFormat=1&duplicateCheck=2&version=4";
+uriUploadFile = "https://recruit.zoho.com/recruit/private/json/CustomModule4/uploadFile?scope=recruitapi&version=2&type=Others";
+uriCandidatesProcessed = "https://recruit.zoho.com/recruit/private/json/CustomModule14/getSearchRecords?scope=recruitapi&version=2&newFormat=2&selectColumns=All&fromIndex=1&toIndex=200";
+uriProcessedCandidates = "https://recruit.zoho.com/recruit/private/xml/CustomModule14/addRecords?scope=recruitapi&newFormat=1&duplicateCheck=2&version=4";
+/*
+eleniusSecretKey = "ddafa1fff8e1261e633576e4ef69d06478260d4f4001ce43517ddb34573f26de";
+eleniusApiKey = "edb76ee83bcd1ff7659d42fa2b4fde63";
+uriADNeResults = "https://adnesolutions.com/APItest/consultas/ADNCedulaOferta/";
+uriADNeResultsPDF = "https://adnesolutions.com/APItest/consultas/informeADNeOfertaV2/";
+debugerIsOn = true;
+testADNeCompleted = "true";
+identificationNumber = "654654654654";
+candidateId = "594922000000679047";
+logElenius = "1";
+*/
+try 
+{
+	if(testADNeCompleted)
+	{
+		//jobOpeningsResponse = getUrl(uriGetAssociatedJobOpenings + "&id=" + candidateId);
+		jobOpeningsResponse = invokeurl
+		[
+			url :uriGetAssociatedJobOpenings + "&id=" + candidateId
+			type :GET
+			connection:"oauthzrecruit"
+		];
+		jobData = jobOpeningsResponse.getJSON("response").getJSON("result");
+		info jobData;
+		//If has a job asociate
+		if(!isNull(jobData))
+		{
+			response = zoho.recruit.getRecordById("Candidates",candidateId);
+			email = response.getJSON("Email");
+			if(isNull(email))
+			{
+				email = "";
+			}
+			jobOpenings = jobData.getJSON("Candidates").getJSON("row");
+			hasMultiplesOpeningsJobs = !isNull(jobOpenings.get(0));
+			if(hasMultiplesOpeningsJobs)
+			{
+				//When has a multiples jobs				
+				for each  job in jobOpenings
+				{
+					//When has only one job 
+					jobId = "";
+					candidateSatus = "";
+					clientId = "";
+					recordsFL = job.getJSON("FL");
+					//Getting the fields of the records
+					for each  record in recordsFL
+					{
+						val = record.getJson('val');
+						if(val == 'JOBOPENINGID')
+						{
+							jobId = record.getJson('content');
+						}
+						if(val == 'STATUS')
+						{
+							candidateSatus = record.getJson('content');
+						}
+					}
+					jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId);
+					jobTitle = jobResponse.getJson('Cargo');
+					clientId = jobResponse.getJSON("CLIENTID");
+					/*START: SEARCHING THE CANDIDATES PROCESSED*/
+					searchKey = candidateId.toString() + '-' + jobId.toString();
+					searchKey = zoho.encryption.urlEncode(searchKey);
+					searchCondition = "searchCondition=(Llave de búsqueda|=|" + searchKey.toString() + ")";
+					headers = Map();
+					headers.put("content-type","application/x-www-form-urlencoded");
+					//processed = postUrl(uriCandidatesProcessed,searchCondition,headers);
+					processed = invokeurl
+					[
+						url :uriCandidatesProcessed
+						type :POST
+						parameters:searchCondition
+						headers:headers
+						connection:"oauthzrecruit"
+					];
+					candidatesProcessedResult = processed.getJson("response").getJson("result");
+					candidateWasProcessed = !isNull(candidatesProcessedResult);
+					//CHECK IF THE CANDIDATE WAS PROCESSED
+					if(!candidateWasProcessed)
+					{
+						/* ----START: BUILD THE PARAMS TO SEND---- */
+						params = Map();
+						params.put("oferta",jobId);
+						params.put("cedulas",{identificationNumber});
+						params.put("api_key",eleniusApiKey);
+						params.put("secret",eleniusSecretKey);
+						/* ----END: BUILD THE PARAMS TO SEND---- */
+						/* ----START: REQUEST---- */
+						headers = Map();
+						adnesolutionsResponse = Map();
+						headers.put("content-type","application/json");
+						//adnesolutionsResponse = postUrl(uriADNeResults,params.toString(),headers,false);
+						adnesolutionsResponse = invokeurl
+						[
+							url :uriADNeResults
+							type :POST
+							parameters:params.toString()
+							headers:headers
+							detailed:true
+						];
+						/* ----END: REQUEST---- */
+						/*****START: LOG RESPONSE***/
+						responseText = adnesolutionsResponse.getJson("responseText");
+						responseText = responseText.toString();
+						responseCode = adnesolutionsResponse.getJson("responseCode");
+						if(logElenius == "1")
+						{
+							xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod">' + responseCode + '</FL><FL val="Response">' + responseText + '</FL><FL val="Msg"><![CDATA[WS]]></FL><FL val="Integration"><![CDATA[Elenius]]></FL><FL val="Method">consultas/ADNCedulaOferta/</FL><FL val="Params">' + params.toString() + '</FL></row></CustomModule6>';
+							headers = Map();
+							headers.put("content-type","application/x-www-form-urlencoded");
+							logResponse = Map();
+							//logResponse = postUrl(uriLog,xmlData,headers,false);
+							logResponse = invokeurl
+							[
+								url :uriLog
+								type :POST
+								parameters:xmlData
+								headers:headers
+								detailed:true
+								connection:"oauthzrecruit"
+							];
+						}
+						/*****END: LOG RESPONSE***/
+						/*****END: GETING THE FILE***/
+						pdfLink = "";
+						params = Map();
+						params.put("Cedula",identificationNumber);
+						params.put("id_oferta_ef",jobId);
+						params.put("Cargo",jobTitle);
+						params.put("api_key",eleniusApiKey);
+						params.put("secret",eleniusSecretKey);
+						headers = Map();
+						headers.put("content-type","application/json");
+						pdfResponse = postUrl(uriADNeResultsPDF,params.toString(),headers,false);
+						responseCode = pdfResponse.getJson("responseCode");
+						if(responseCode == "200")
+						{
+							pdfLink = encodeUrl(pdfResponse.getJson("responseText").getJson("link"));
+						}
+						/*****END: GETING THE FILE***/
+						/*****START: SAVE ADNe RESULTS***/
+						if(responseCode != "400")
+						{
+							adneResults = adnesolutionsResponse.getJson("responseText");
+							rrg = adneResults.getJSON("rrg");
+							rch = adneResults.getJSON("rch");
+							rco = adneResults.getJSON("rco");
+							rra = adneResults.getJSON("rra");
+							fec = adneResults.getJSON("fec");
+							ced = adneResults.getJSON("ced");
+							ido = adneResults.getJSON("ido");
+							fec = fec.toList(" ");
+							fec = fec.get(0);
+							fec = fec.toList("/");
+							fec = fec.get(2) + "-" + fec.get(1) + "-" + fec.get(0);
+							xmlData = 'xmlData=<CustomModule4><row no="1"><FL val="Email">' + email.toString() + ' </FL><FL val="fec. Fecha"><![CDATA[' + fec.toString() + ']]></FL><FL val="ced. Cedula"><![CDATA[' + ced + ']]></FL><FL val="ido. ID Oferta Eficacia"><![CDATA[' + ido + ']]></FL><FL val="rrg. Resultado global - Resultado"><![CDATA[' + rrg + ']]></FL><FL val="rch. Afinidad sobre el cargo por habilidades - Res"><![CDATA[' + rch + ']]></FL><FL val="rco. Afinidad cultura organizacional - Resultado"><![CDATA[' + rco + ']]></FL><FL val="rra. Ranking de las cédulas consultadas"><![CDATA[' + rra + ']]></FL><FL val="Oferta_ID"><![CDATA[' + jobId + ']]></FL><FL val="Cliente_ID"><![CDATA[' + clientId + ']]></FL><FL val="Candidato_ID"><![CDATA[' + candidateId + ']]></FL><FL val="Detalle de resultados"><![CDATA[' + pdfLink + ']]></FL></row></CustomModule4>';
+							headers = Map();
+							headers.put("content-type","application/x-www-form-urlencoded");
+							logResponse = Map();
+							//logResponse = postUrl(uriAddADNeresults,xmlData,headers,false);
+							logResponse = invokeurl
+							[
+								url :uriAddADNeresults
+								type :POST
+								parameters:xmlData
+								headers:headers
+								detailed:true
+								connection:"oauthzrecruit"
+							];
+						}
+						/*****END: SAVE ADNe RESULTS***/
+						/*-----START: LOG PROCESSED CANDIDATES ----*/
+						xmlData = 'xmlData=<CustomModule14><row no="1"><FL val="Oferta_ID"><![CDATA[' + jobId.toString() + ']]></FL><FL val="Cliente_ID"><![CDATA[' + clientId.toString() + ']]></FL><FL val="Candidato_ID"><![CDATA[' + candidateId.toString() + ']]></FL><FL val="Llave de búsqueda"><![CDATA[' + searchKey.toString() + ']]></FL><FL val="Tipo"><![CDATA[Elenius]]></FL></row></CustomModule14>';
+						headers = Map();
+						headers.put("content-type","application/x-www-form-urlencoded");
+						logResponse = Map();
+						//logResponse = postUrl(uriProcessedCandidates,xmlData,headers,false);
+						logResponse = invokeurl
+						[
+							url :uriProcessedCandidates
+							type :POST
+							parameters:xmlData
+							headers:headers
+							detailed:true
+							connection:"oauthzrecruit"
+						];
+						/*-----END: LOG PROCESSED CANDIDATES----*/
+					}
+					else
+					{
+						info "The candidate is allready processed";
+					}
+					/*END: SEARCHING THE CANDIDATES PROCESSED*/
+				}
+			}
+			else
+			{
+				//When has only one job 
+				jobId = "";
+				candidateSatus = "";
+				clientId = "";
+				recordsFL = jobOpenings.getJSON("FL");
+				//Getting the fields of the records
+				for each  record in recordsFL
+				{
+					val = record.getJson('val');
+					if(val == 'JOBOPENINGID')
+					{
+						jobId = record.getJson('content');
+					}
+					if(val == 'STATUS')
+					{
+						candidateSatus = record.getJson('content');
+					}
+				}
+				jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId);
+				jobTitle = jobResponse.getJson('Cargo');
+				clientId = jobResponse.getJSON("CLIENTID");
+				/*----VALIDATING THE CANDIDATE STATUS----*/
+				//if(candidateSatus == "En prueba de preselección"){
+				/*START: SEARCHING THE CANDIDATES PROCESSED*/
+				searchKey = candidateId.toString() + '-' + jobId.toString();
+				searchKey = zoho.encryption.urlEncode(searchKey);
+				searchCondition = "searchCondition=(Llave de búsqueda|=|" + searchKey.toString() + ")";
+				headers = Map();
+				headers.put("content-type","application/x-www-form-urlencoded");
+				//processed = postUrl(uriCandidatesProcessed,searchCondition,headers);
+				processed = invokeurl
+				[
+					url :uriCandidatesProcessed
+					type :POST
+					parameters:searchCondition
+					headers:headers
+					connection:"oauthzrecruit"
+				];
+				candidatesProcessedResult = processed.getJson("response").getJson("result");
+				candidateWasProcessed = !isNull(candidatesProcessedResult);
+				//CHECK IF THE CANDIDATE WAS PROCESSED
+				info candidateWasProcessed;
+				if(!candidateWasProcessed)
+				{
+					/* ----START: BUILD THE PARAMS TO SEND---- */
+					params = Map();
+					params.put("oferta",jobId);
+					params.put("cedulas",{identificationNumber});
+					params.put("api_key",eleniusApiKey);
+					params.put("secret",eleniusSecretKey);
+					/* ----END: BUILD THE PARAMS TO SEND---- */
+					/* ----START: REQUEST---- */
+					headers = Map();
+					adnesolutionsResponse = Map();
+					headers.put("content-type","application/json");
+					adnesolutionsResponse = postUrl(uriADNeResults,params.toString(),headers,false);
+					//info adnesolutionsResponse.toString();
+					/* ----END: REQUEST---- */
+					/*****START: LOG RESPONSE***/
+					responseText = adnesolutionsResponse.getJson("responseText");
+					responseText = responseText.toString();
+					responseCode = adnesolutionsResponse.getJson("responseCode");
+					if(logElenius == "1")
+					{
+						xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod">' + responseCode + '</FL><FL val="Response"><![CDATA[' + responseText + ']]></FL><FL val="Msg"><![CDATA[getADNeResults]]></FL><FL val="Integration"><![CDATA[Elenius]]></FL><FL val="Method">consultas/ADNCedulaOferta/</FL><FL val="Params">' + params.toString() + '</FL></row></CustomModule6>';
+						headers = Map();
+						headers.put("content-type","application/x-www-form-urlencoded");
+						logResponse = Map();
+						//logResponse = postUrl(uriLog,xmlData,headers,false);
+						logResponse = invokeurl
+						[
+							url :uriLog
+							type :POST
+							parameters:xmlData.toString()
+							headers:headers
+							detailed:true
+							connection:"oauthzrecruit"
+						];
+						info logResponse;
+						/**/
+					}
+					/*****END: LOG RESPONSE***/
+					/*****END: GETING THE FILE***/
+					pdfLink = "";
+					params = Map();
+					params.put("Cedula",identificationNumber);
+					params.put("id_oferta_ef",jobId);
+					params.put("Cargo",jobTitle);
+					params.put("api_key",eleniusApiKey);
+					params.put("secret",eleniusSecretKey);
+					headers = Map();
+					headers.put("content-type","application/json");
+					pdfResponse = postUrl(uriADNeResultsPDF,params.toString(),headers,false);
+					//info pdfResponse;
+					responseCode = pdfResponse.getJson("responseCode");
+					if(responseCode == "200")
+					{
+						pdfLink = encodeUrl(pdfResponse.getJson("responseText").getJson("link"));
+						//info pdfLink;
+					}
+					/*****END: GETING THE FILE***/
+					/*****START: SAVE ADNe RESULTS***/
+					if(responseCode != "400")
+					{
+						adneResults = adnesolutionsResponse.getJson("responseText");
+						rrg = adneResults.getJSON("rrg");
+						rch = adneResults.getJSON("rch");
+						rco = adneResults.getJSON("rco");
+						rra = adneResults.getJSON("rra");
+						fec = adneResults.getJSON("fec");
+						ced = adneResults.getJSON("ced");
+						ido = adneResults.getJSON("ido");
+						fec = fec.toList(" ");
+						fec = fec.get(0);
+						fec = fec.toList("/");
+						fec = fec.get(2) + "-" + fec.get(1) + "-" + fec.get(0);
+						xmlData = 'xmlData=<CustomModule4><row no="1"><FL val="Email"> ' + email.toString() + ' </FL><FL val="fec. Fecha"><![CDATA[' + fec.toString() + ']]></FL><FL val="ced. Cedula"><![CDATA[' + ced + ']]></FL><FL val="ido. ID Oferta Eficacia"><![CDATA[' + ido + ']]></FL><FL val="rrg. Resultado global - Resultado"><![CDATA[' + rrg + ']]></FL><FL val="rch. Afinidad sobre el cargo por habilidades - Res"><![CDATA[' + rch + ']]></FL><FL val="rco. Afinidad cultura organizacional - Resultado"><![CDATA[' + rco + ']]></FL><FL val="rra. Ranking de las cédulas consultadas"><![CDATA[' + rra + ']]></FL><FL val="Oferta_ID"><![CDATA[' + jobId + ']]></FL><FL val="Cliente_ID"><![CDATA[' + clientId + ']]></FL><FL val="Candidato_ID"><![CDATA[' + candidateId + ']]></FL><FL val="Detalle de resultados"><![CDATA[' + pdfLink + ']]></FL></row></CustomModule4>';
+						headers = Map();
+						headers.put("content-type","application/x-www-form-urlencoded");
+						logResponse = Map();
+						//logResponse = postUrl(uriAddADNeresults,xmlData,headers,false);
+						logResponse = invokeurl
+						[
+							url :uriAddADNeresults
+							type :POST
+							parameters:xmlData
+							headers:headers
+							detailed:true
+							connection:"oauthzrecruit"
+						];
+						info logResponse;
+					}
+					/*****END: SAVE ADNe RESULTS***/
+					/*-----START: LOG PROCESSED CANDIDATES ----*/
+					xmlData = 'xmlData=<CustomModule14><row no="1"><FL val="Oferta_ID"><![CDATA[' + jobId.toString() + ']]></FL><FL val="Cliente_ID"><![CDATA[' + clientId.toString() + ']]></FL><FL val="Candidato_ID"><![CDATA[' + candidateId.toString() + ']]></FL><FL val="Llave de búsqueda"><![CDATA[' + searchKey.toString() + ']]></FL><FL val="Tipo"><![CDATA[Elenius]]></FL></row></CustomModule14>';
+					headers = Map();
+					headers.put("content-type","application/x-www-form-urlencoded");
+					logResponse = Map();
+					//logResponse = postUrl(uriProcessedCandidates,xmlData,headers,false);
+					logResponse = invokeurl
+					[
+						url :uriProcessedCandidates
+						type :POST
+						parameters:xmlData
+						headers:headers
+						detailed:true
+						connection:"oauthzrecruit"
+					];
+					/*-----END: LOG PROCESSED CANDIDATES----*/
+				}
+				else
+				{
+					info "The candidate is allready processed";
+				}
+				/*END: SEARCHING THE CANDIDATES PROCESSED*/
+				//}
+			}
+		}
+		else
+		{
+			if(logElenius == "1")
+			{
+				xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod"></FL><FL val="Response">El candidato no tiene ofertas asociadas</FL><FL val="Msg"><![CDATA[getADNeResults]]></FL><FL val="Integration"><![CDATA[Elenius]]></FL><FL val="Method">consultas/ADNCedulaOferta/</FL><FL val="Params"></FL></row></CustomModule6>';
+				headers = Map();
+				headers.put("content-type","application/x-www-form-urlencoded");
+				logResponse = Map();
+				//logResponse = postUrl(uriLog,xmlData,headers,false);
+				logResponse = invokeurl
+				[
+					url :uriLog
+					type :POST
+					parameters:xmlData
+					headers:headers
+					detailed:true
+					connection:"oauthzrecruit"
+				];
+			}
+		}
+	}
+	else
+	{
+		if(logElenius == "1")
+		{
+			xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod"></FL><FL val="Response">El candidato no ha diligenciado el ADNe test</FL><FL val="Msg"><![CDATA[getADNeResults]]></FL><FL val="Integration"><![CDATA[Elenius]]></FL><FL val="Method">consultas/ADNCedulaOferta/</FL><FL val="Params"></FL></row></CustomModule6>';
+			headers = Map();
+			headers.put("content-type","application/x-www-form-urlencoded");
+			logResponse = Map();
+			//logResponse = postUrl(uriLog,xmlData,headers,false);
+			logResponse = invokeurl
+			[
+				url :uriLog
+				type :POST
+				parameters:xmlData
+				headers:headers
+				detailed:true
+				connection:"oauthzrecruit"
+			];
+		}
+	}
+}
+ catch (e)
+{	// Handle Exception here
+	if(logElenius == "1")
+	{
+		info e.toString();
+		xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod"></FL><FL val="Response">' + e.toString() + '</FL><FL val="Msg"><![CDATA[getADNeResults]]></FL><FL val="Integration"><![CDATA[Elenius]]></FL><FL val="Method">consultas/ADNCedulaOferta/</FL><FL val="Params"></FL></row></CustomModule6>';
+		headers = Map();
+		headers.put("content-type","application/x-www-form-urlencoded");
+		logResponse = Map();
+		//logResponse = postUrl(uriLog,xmlData,headers,false);
+		logResponse = invokeurl
+		[
+			url :uriLog
+			type :POST
+			parameters:xmlData
+			headers:headers
+			detailed:true
+			connection:"oauthzrecruit"
+		];
+	}
+}

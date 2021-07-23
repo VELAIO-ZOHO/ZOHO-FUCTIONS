@@ -1,0 +1,591 @@
+// void send_adne_candidatos(string logElenius,bigint adneCandidatoId,string uriCreateCandidateADNe,string eleniusSecretKey,string eleniusApiKey)
+/*
+ -----ELENIUS----
+0. Obtiene el ADNE_Candidatos
+1. Buscar el candidato (Se busca primero por cedula y si no se encuentra por email)
+2. Relaciona el registro con el ADNE_Candidatos / Update al candidato
+3. Consolidar la información que se va enviar (Consultar otros modulos cuando se trate de campos  de busqueda o relacionados / Lookup)
+4. Se concatena el test (prueba) para enviarlo en la API, Ver documentación
+5. Se hace el envio y se guarda la respuesta en el log, siempre se tiene que considerar el estado de la variable log_elenius para guardar o no en el log.
+*/
+uriCustomModule7States = "https://recruit.zoho.com/recruit/private/json/CustomModule7/getRecordById?scope=recruitapi&version=2&newFormat=1";
+uriGeographicLocations = "https://recruit.zoho.com/recruit/private/json/CustomModule12/getSearchRecords?scope=recruitapi&version=2&newFormat=2&selectColumns=All&fromIndex=1&toIndex=200";
+uriLog = "https://recruit.zoho.com/recruit/private/xml/CustomModule6/addRecords?scope=recruitapi&newFormat=1&duplicateCheck=2&version=4";
+/*
+eleniusSecretKey = "ddafa1fff8e1261e633576e4ef69d06478260d4f4001ce43517ddb34573f26de";
+eleniusApiKey = "edb76ee83bcd1ff7659d42fa2b4fde63";
+logElenius = "1";
+adneCandidatoId = "594922000001542194";
+uriCreateCandidateADNe = "https://adnesolutions.com/APItest/testCandidato/crear/";
+*/
+//*****START: GETING THE ADNeCandidato PARAMS***//
+ADNeCandidatoModule = "CustomModule1";
+ADNeCandidatoResponse = zoho.recruit.getRecordById("CustomModule1",adneCandidatoId);
+candidateIdADNe = ADNeCandidatoResponse.getJson("Candidato Id");
+queryParms = "Candidate ID|=|" + candidateIdADNe;
+columns = "All";
+candidatesResponse = zoho.recruit.searchRecords("Candidates",queryParms,1,1,columns);
+candidateId = candidatesResponse.getJson("CANDIDATEID");
+candidatesResponse = zoho.recruit.getRecordById("Candidates",candidateId);
+//*****END: GETING THE ADNeCandidato PARAMS***//
+uriUpdateCandidates = "https://recruit.zoho.com/recruit/private/xml/Candidates/updateRecords?scope=recruitapi&version=2&id=" + candidateId + "&wfTrigger=true";
+uriTabularExperienceDetails = "https://recruit.zoho.com/recruit/private/json/Candidates/getTabularRecords?authtoken=06b7a101af7b05dc8820c2b63990c67e&scope=recruitapi&id=" + candidateId + "&tabularNames=(Experience Details)";
+// control de tiempo de ejecución: Brayan Dev. ====================== //
+startExecutionTime = now;
+endExecutionTime = "";
+timeExecution = "";
+// ================================================================== //
+try 
+{
+	//*****UPDATING ADNecandidato, seting the candidateId***//
+	ADNeCandidatoResponse.put("Candidato_ID",candidateId);
+	response = zoho.recruit.updateRecord("CustomModule1",adneCandidatoId,ADNeCandidatoResponse);
+	//*****START:GETING THE LOCATIONS***//
+	fullName = candidatesResponse.getJson('First Name') + ' ' + candidatesResponse.getJson('Last Name');
+	fullName = zoho.encryption.urlEncode(fullName);
+	searchCondition = "searchCondition=(Candidato|=|" + fullName.toString() + ")";
+	headers = Map();
+	headers.put("content-type","application/x-www-form-urlencoded");
+	//geographicLocations = postUrl(uriGeographicLocations,searchCondition,headers);
+	geographicLocations = invokeurl
+	[
+		url :uriGeographicLocations
+		type :POST
+		parameters:searchCondition
+		headers:headers
+		connection:"oauthzrecruit"
+	];
+	responseGeographicLocations = geographicLocations.getJson("response").getJson("result");
+	cityName = "";
+	stateName = "";
+	stateCode = "";
+	cityCode = "";
+	country = "";
+	if(!isNull(responseGeographicLocations))
+	{
+		GeographicLocations = responseGeographicLocations.getJSON("CustomModule12").getJSON("row");
+		hasMultiplesOpeningsAttachments = !isNull(GeographicLocations.get(0));
+		if(hasMultiplesOpeningsAttachments)
+		{
+			//When has a multiples GeographicLocations				
+			for each  key in GeographicLocations
+			{
+				recordsFL = key.getJson('FL');
+				geographicLocationCandidateId = null;
+				type = null;
+				cityId = null;
+				cityName = "";
+				stateName = "";
+				stateCode = "";
+				cityCode = "";
+				country = "";
+				//Getting the fields of the records
+				for each  record in recordsFL
+				{
+					val = record.getJson('val');
+					if(val == 'Candidato_ID')
+					{
+						geographicLocationCandidateId = record.getJson('content');
+					}
+					if(val == 'Tipo')
+					{
+						typeLocation = record.getJson('content');
+					}
+					if(val == 'Ciudad_ID')
+					{
+						cityId = record.getJson('content');
+					}
+					if(val == 'Ciudad')
+					{
+						cityName = record.getJson('content');
+					}
+					if(val == 'Departmento')
+					{
+						stateName = record.getJson('content');
+					}
+					if(val == 'Departmento_ID')
+					{
+						stateId = record.getJson('content');
+					}
+					if(val == 'Pais')
+					{
+						country = record.getJson('content');
+					}
+				}
+				if(geographicLocationCandidateId == candidateId && typeLocation == 'Domicilio')
+				{
+					//GETTING THE STATE CODE 
+					stateResponse = zoho.recruit.getRecordById("CustomModule5",stateId);
+					stateCode = stateResponse.getJson("Codigo");
+					//GETTING THE CITY CODE 
+					//cityResponse = getUrl(uriCustomModule7States + '&id=' + cityId);
+					cityResponse = invokeurl
+					[
+						url :uriCustomModule7States + "&id=" + cityId
+						type :GET
+						connection:"oauthzrecruit"
+					];
+					fieldsCityModule = cityResponse.getJson('response').getJson('result').getJson('CustomModule7').getJson('row').getJson('FL');
+					for each  fieldCityModule in fieldsCityModule
+					{
+						fieldRecord = fieldCityModule.getJson('val');
+						if(fieldRecord == 'Codigo')
+						{
+							cityCode = fieldCityModule.getJson('content');
+						}
+					}
+					break;
+				}
+			}
+		}
+		else
+		{
+			//When has only one GeographicLocation
+			recordsFL = GeographicLocations.getJson('FL');
+			geographicLocationCandidateId = null;
+			type = null;
+			cityId = null;
+			cityName = "";
+			stateName = "";
+			stateCode = "";
+			cityCode = "";
+			country = "";
+			//Getting the fields of the records
+			for each  record in recordsFL
+			{
+				val = record.getJson('val');
+				if(val == 'Candidato_ID')
+				{
+					geographicLocationCandidateId = record.getJson('content');
+				}
+				if(val == 'Tipo')
+				{
+					typeLocation = record.getJson('content');
+				}
+				if(val == 'Ciudad_ID')
+				{
+					cityId = record.getJson('content');
+				}
+				if(val == 'Ciudad')
+				{
+					cityName = record.getJson('content');
+				}
+				if(val == 'Departmento')
+				{
+					stateName = record.getJson('content');
+				}
+				if(val == 'Departmento_ID')
+				{
+					stateId = record.getJson('content');
+				}
+				if(val == 'Pais')
+				{
+					country = record.getJson('content');
+				}
+			}
+			if(geographicLocationCandidateId == candidateId && typeLocation == 'Domicilio')
+			{
+				//GETTING THE STATE CODE 
+				stateResponse = zoho.recruit.getRecordById("CustomModule5",stateId);
+				stateCode = stateResponse.getJson("Codigo");
+				//GETTING THE CITY CODE 
+				//cityResponse = getUrl(uriCustomModule7States + '&id=' + cityId);
+				cityResponse = invokeurl
+				[
+					url :uriCustomModule7States + "&id=" + cityId
+					type :GET
+					connection:"oauthzrecruit"
+				];
+				fieldsCityModule = cityResponse.getJson('response').getJson('result').getJson('CustomModule7').getJson('row').getJson('FL');
+				for each  fieldCityModule in fieldsCityModule
+				{
+					fieldRecord = fieldCityModule.getJson('val');
+					if(fieldRecord == 'Codigo')
+					{
+						cityCode = fieldCityModule.getJson('content');
+					}
+				}
+			}
+		}
+	}
+	//*****END:GETING THE LOCATIONS***//
+	// CIVIL STATUS
+	civilStatusTemp = candidatesResponse.getJson("Estado civil");
+	civilStatus = 'SINDEFINIR';
+	if(civilStatusTemp == 'Casado(a)')
+	{
+		civilStatus = 'CASADO';
+	}
+	if(civilStatusTemp == 'Soltero(a)')
+	{
+		civilStatus = 'SOLTERO';
+	}
+	if(civilStatusTemp == 'Viudo(a)')
+	{
+		civilStatus = 'VIUDO';
+	}
+	if(civilStatusTemp == 'Separado(a)')
+	{
+		civilStatus = 'SEPARADO';
+	}
+	if(civilStatusTemp == 'Unión libre')
+	{
+		civilStatus = 'UNIONLIBRE';
+	}
+	//START: DATE FORMAT
+	createDateTime_temp = candidatesResponse.getJson("Created Time");
+	createDateTime_temp = createDateTime_temp.toList(" ");
+	createDate = createDateTime_temp.get(0);
+	createTime = createDateTime_temp.get(1);
+	createDate = createDate.toList("-");
+	day = createDate.get(2);
+	month = createDate.get(1);
+	year = createDate.get(0);
+	createDateTime = day + "/" + month + "/" + year + " " + createTime;
+	//END: Date format 
+	//START: LAST NAME FORMAT
+	lastName1 = '';
+	lastName2 = '';
+	lasName = candidatesResponse.getJson("Last Name");
+	listLastName = lasName.toList(" ");
+	lastName1 = listLastName.get(0);
+	if(listLastName.size() > 1)
+	{
+		lastName2 = listLastName.get(1);
+	}
+	//END: LAST NAME FORMAT
+	//START: GENDER
+	genderTemp = candidatesResponse.getJson("Género");
+	gender = '3';
+	if(genderTemp == 'Femenino')
+	{
+		gender = '2';
+	}
+	else if(genderTemp == 'Masculino')
+	{
+		gender = '1';
+	}
+	//END: GENDER
+	//START Birthday
+	birthdateTemp = candidatesResponse.getJson("Fecha de nacimiento");
+	birthdate = "";
+	if(!isNull(birthdateTemp))
+	{
+		birthdateObj = birthdateTemp.toDate('yyyy-mm-dd');
+		birthdate = birthdateObj.toString("dd/MM/yyyy");
+	}
+	//END: Birthdate
+	//START: EDUCATIONALS DETAILS
+	maxLevelStudy = 'Sin Definir';
+	maxLevelStudyTemp = candidatesResponse.getJson('Nivel máximo estudio alcanzado');
+	if(maxLevelStudyTemp == 'Pos doctorado')
+	{
+		maxLevelStudy = 'Doctorado';
+	}
+	if(maxLevelStudyTemp == 'Maestría')
+	{
+		maxLevelStudy = 'Maestria';
+	}
+	if(maxLevelStudyTemp == 'Tecnólogo')
+	{
+		maxLevelStudy = 'Tecnológico';
+	}
+	if(maxLevelStudyTemp == 'Técnico')
+	{
+		maxLevelStudy = 'Técnico Laboral';
+	}
+	if(maxLevelStudyTemp == 'Pregrado')
+	{
+		maxLevelStudy = 'Universitario';
+	}
+	//END: EDUCATIONALS DETAILS
+	//START: EXPERIENCE DETAILS
+	workTitle = "";
+	workDuration = "0";
+	tabularRecordsResp = getUrl(uriTabularExperienceDetails);
+	/*
+	uriTabularExperienceDetails = zoho.encryption.urlEncode(uriTabularExperienceDetails);
+	
+    tabularRecordsResp = invokeurl
+    [
+        url : uriTabularExperienceDetails
+        type :GET
+        connection:"oauthzrecruit"
+    ];
+    */
+	res = tabularRecordsResp.getJson("response").getJSON('result').getJSON('Candidates').getJSON('FL').getJSON('TR');
+	if(!isNull(res))
+	{
+		day = today.getDay();
+		month = today.getMonth();
+		year = today.getYear();
+		if(day.len() == 1)
+		{
+			day = "0" + day;
+		}
+		if(month.len() == 1)
+		{
+			month = "0" + month;
+		}
+		endDate = day + "-" + month + "-" + year;
+		workDuration = "0";
+		hasMultiplesOpeningsJobs = !isNull(res.get(0));
+		if(hasMultiplesOpeningsJobs)
+		{
+			recordsTL = res.getJSON("TL");
+			for each  record in recordsTL
+			{
+				val = record.getJson('val');
+				if(val == "Occupation / Title")
+				{
+					workTitle = record.getJson('content');
+				}
+				if(val == "Work Duration_From")
+				{
+					startDate = '01-' + record.getJson('content');
+					startDate = startDate.toDate('dd-mm-yyyy');
+				}
+				if(val == "Work Duration_To")
+				{
+					endDate = '01-' + record.getJson('content');
+					endDate = endDate.toDate('dd-mm-yyyy');
+				}
+			}
+		}
+		else
+		{
+			recordsTL = res.getJSON("TL");
+			for each  record in recordsTL
+			{
+				val = record.getJson('val');
+				if(val == "Occupation / Title")
+				{
+					workTitle = record.getJson('content');
+				}
+				if(val == "Work Duration_From")
+				{
+					startDate = '01-' + record.getJson('content');
+					startDate = startDate.toDate('dd-mm-yyyy');
+				}
+				if(val == "Work Duration_To")
+				{
+					endDate = '01-' + record.getJson('content');
+					endDate = endDate.toDate('dd-mm-yyyy');
+				}
+			}
+		}
+		workDuration = monthsDiff(startDate,endDate);
+	}
+	SectorExperiencia = '';
+	//END: TABULAR RECORDS
+	//START:AVAILABILITY TO TRAVEL
+	availabilityTravelTemp = candidatesResponse.getJson("Disponibilidad para laborar en otra ciudad");
+	availabilityToTravel = '';
+	if(availabilityTravelTemp == 'Si')
+	{
+		availabilityToTravel = '1';
+	}
+	else
+	{
+		availabilityToTravel = '0';
+	}
+	//END: AVAILAVILITY TO TRAVEL
+	//START: Days in which you can work
+	daysToWorkTemp = candidatesResponse.getJson("Jornadas en las cuales usted puede laborar");
+	daysToWork = '1,2';
+	if(daysToWorkTemp == 'Nocturno')
+	{
+		daysToWork = '2';
+	}
+	if(daysToWorkTemp == 'Diurno')
+	{
+		daysToWork = '1';
+	}
+	//END: Days in which you can work
+	//START: Can work weekend
+	workInWeekend = '1,2';
+	workInWeekendTemp = candidatesResponse.getJson("Puede laborar fin de semana");
+	if(workInWeekendTemp == 'Diurno')
+	{
+		workInWeekend = '1';
+	}
+	else if(workInWeekendTemp == 'Nocturno')
+	{
+		workInWeekend = '2';
+	}
+	//END: Can work weekend
+	//START: Preparing TesAND
+	ADNeCandidatosKeys = ADNeCandidatoResponse.keys();
+	ANDanswers = '';
+	lengthTestADN = 59;
+	i = 1;
+	for each  key in ADNeCandidatosKeys
+	{
+		question = key.toList(".");
+		if(question.get(0).isNumber())
+		{
+			questioId = question.get(0);
+			questionValueTemp = ADNeCandidatoResponse.get(key);
+			if(questionValueTemp == 'No,nunca')
+			{
+				questionValue = '0';
+			}
+			else if(questionValue == 'Rara vez')
+			{
+				questionValue = '1';
+			}
+			else if(questionValue == 'Algunas veces')
+			{
+				questionValue = '2';
+			}
+			else if(questionValue == 'A menudo')
+			{
+				questionValue = '3';
+			}
+			else
+			{
+				questionValue = '3';
+			}
+			if(i < lengthTestADN)
+			{
+				ANDanswers = ANDanswers + questioId + ":" + questionValue + ";";
+			}
+			else
+			{
+				ANDanswers = ANDanswers + questioId + ":" + questionValue;
+			}
+			i = i + 1;
+		}
+	}
+	sons = candidatesResponse.getJson("Número de hijos");
+	if(isNull(sons))
+	{
+		sons = 0;
+	}
+	source = candidatesResponse.getJson("Source");
+	if(isNull(source))
+	{
+		source = "";
+	}
+	firtsName = candidatesResponse.getJson("First Name");
+	if(isNull(firtsName))
+	{
+		firtsName = "";
+	}
+	email = candidatesResponse.getJson("Email");
+	if(isNull(email))
+	{
+		email = "";
+	}
+	documentNumber = candidatesResponse.getJson("Número de documento");
+	if(isNull(documentNumber))
+	{
+		documentNumber = "";
+	}
+	mobile = candidatesResponse.getJson("Mobile");
+	if(isNull(mobile))
+	{
+		mobile = "";
+	}
+	//END: Preparing TesAND	
+	params = Map();
+	params.put("Marca",createDateTime);
+	params.put("Nombre",firtsName);
+	params.put("Apellido1",lastName1);
+	params.put("Apellido2",lastName2);
+	params.put("Mail",email);
+	params.put("Cedula",documentNumber);
+	params.put("Genero",gender);
+	params.put("FechaNacimiento",birthdate);
+	params.put("Nacionalidad",country);
+	params.put("CodigoDepartamento",stateCode);
+	params.put("Departamento",stateName);
+	params.put("CodigoCiudad",cityCode);
+	params.put("Ciudad",cityName);
+	params.put("EstadoCivil",civilStatus);
+	params.put("Celular",mobile);
+	params.put("Hijos",sons);
+	params.put("NivelEducativo",maxLevelStudy);
+	params.put("CargoExperiencia",workTitle);
+	params.put("Duracion",workDuration);
+	params.put("SectorExperiencia","Servicios");
+	params.put("FuenteReclutamiento",source);
+	params.put("Movilidad",availabilityToTravel);
+	params.put("PreferenciaLaboralCompleta",daysToWork);
+	params.put("PreferenciaLaboralParcial","");
+	params.put("PreferenciaLaboralFinSemana",workInWeekend);
+	params.put("Informatica","1");
+	params.put("TestADN",ANDanswers);
+	params.put("api_key",eleniusApiKey);
+	params.put("secret",eleniusSecretKey);
+	//*****START: SEND THE DATA***//
+	headers = Map();
+	adnesolutionsResponse = Map();
+	headers.put("content-type","application/json");
+	adnesolutionsResponse = postUrl(uriCreateCandidateADNe,params.toString(),headers,false);
+	responseText = adnesolutionsResponse.getJson("responseText");
+	responseText = responseText.toString();
+	responseCode = adnesolutionsResponse.getJson("responseCode");
+	//*****START: UPDATING THE "Test ADNe realizado" FIELD ***//
+	info adnesolutionsResponse;
+	if(responseCode == 200 || responseCode == 201)
+	{
+		xmlDataCandidates = 'xmlData=<Candidates><row no="1"><FL val="Test ADNe realizado"><![CDATA[true]]></FL></row></Candidates>';
+		headers = Map();
+		updateCandidateResponse = Map();
+		headers.put("content-type","application/x-www-form-urlencoded");
+		//postUrl(uriUpdateCandidates,xmlDataCandidates,headers,false);
+		info "Entro...";
+		updateCandidateResponse = invokeurl
+		[
+			url :uriUpdateCandidates
+			type :POST
+			parameters:xmlDataCandidates.toString()
+			headers:headers
+			detailed:true
+			connection:"oauthzrecruit"
+		];
+		info updateCandidateResponse;
+	}
+	//*****END: UPDATING THE "Test ADNe realizado" FIELD ***//
+	endExecutionTime = now;
+	timeExecution = startExecutionTime.timeBetween(endExecutionTime);
+	//*****START: LOG RESPONSE***//
+	if(logElenius == "1")
+	{
+		xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod">' + responseCode.toString() + '</FL><FL val="Response">' + responseText.toString() + '</FL><FL val="Msg">send_adne_candidatos</FL><FL val="Integration">Elenius</FL><FL val="Method">' + uriCreateCandidateADNe + '</FL><FL val="Params">' + params.toString() + '</FL><FL val="Inicio de ejecución">' + startExecutionTime + '</FL><FL val="Fin de ejecución">' + endExecutionTime + '</FL><FL val="Tiempo de ejecución">' + timeExecution + '</FL></row></CustomModule6>';
+		headers = Map();
+		headers.put("content-type","application/x-www-form-urlencoded");
+		logResponse = Map();
+		//logResponse = postUrl(uriLog,xmlData,headers,false);
+		logResponse = invokeurl
+		[
+			url :uriLog
+			type :POST
+			parameters:xmlData
+			headers:headers
+			detailed:true
+			connection:"oauthzrecruit"
+		];
+		info logResponse;
+	}
+}
+ catch (e)
+{	info e.toString();
+	endExecutionTime = now;
+	timeExecution = startExecutionTime.timeBetween(endExecutionTime);
+	xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod"></FL><FL val="Response">' + e.toString() + '</FL><FL val="Msg"><![CDATA[send_adne_candidatos]]></FL><FL val="Integration"><![CDATA[Elenius]]></FL><FL val="Method">Candidato/crear/</FL><FL val="Params"></FL><FL val="Inicio de ejecución">' + startExecutionTime + '</FL><FL val="Fin de ejecución">' + endExecutionTime + '</FL><FL val="Tiempo de ejecución">' + timeExecution + '</FL><FL val="Crashed">TRUE</FL></row></CustomModule6>';
+	headers = Map();
+	headers.put("content-type","application/x-www-form-urlencoded");
+	logResponse = Map();
+	//logResponse = postUrl(uriLog,xmlData,headers,false);
+	logResponse = invokeurl
+	[
+		url :uriLog
+		type :POST
+		parameters:xmlData
+		headers:headers
+		detailed:true
+		connection:"oauthzrecruit"
+	];
+}

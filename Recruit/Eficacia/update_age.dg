@@ -1,0 +1,58 @@
+// void update_age(string dateBirth,bigint candidateId,string startDate,string endDate,string startDate2,string endDate2)
+
+/*
+dateBirth = '01/01/1990';
+
+startDate = '01/01/2000';
+endDate = null;
+
+startDate2 = null;
+endDate2 = null;
+candidateId = "594922000001479089";
+*/
+timeWorked1 = '';
+timeWorked2 = '';
+age = "";
+params = Map();
+/***START:BIRDTHDAY ***/
+if(!isNull(dateBirth))
+{
+	age = yearsDiff(dateBirth,today);
+}
+/***END:BIRDTHDAY ***/
+/***START:UPDATE TIME WORKED ***/
+if(!isNull(startDate) && !isNull(endDate))
+{
+	timeWorked1 = monthsDiff(startDate.toDate(),endDate.toDate());
+	if(timeWorked1.toNumber() > 11)
+	{
+		timeWorked1 = yearsDiff(startDate.toDate(),endDate.toDate());
+	}
+	else
+	{
+		timeWorked1 = monthsDiff(startDate.toDate(),endDate.toDate());
+		timeWorked1 = "0." + timeWorked1;
+	}
+}
+if(!isNull(startDate2) && !isNull(endDate2))
+{
+	timeWorked2 = monthsDiff(startDate2.toDate(),endDate2.toDate());
+	if(timeWorked2.toNumber() > 11)
+	{
+		timeWorked2 = yearsDiff(startDate2.toDate(),endDate2.toDate());
+	}
+	else
+	{
+		timeWorked2 = monthsDiff(startDate2.toDate(),endDate2.toDate());
+		timeWorked2 = "0." + timeWorked2;
+	}
+}
+params.put("Edad",age);
+params.put("Tiempo laborado",timeWorked1);
+params.put("Tiempo laborado 2",timeWorked2);
+if(!isNull(age) || !isNull(timeWorked2) || !isNull(timeWorked2))
+{
+	edgeResponse = zoho.recruit.updateRecord("Candidates",candidateId,params);
+	info edgeResponse;
+}
+/***END:UPDATE TIME WORKED ***/

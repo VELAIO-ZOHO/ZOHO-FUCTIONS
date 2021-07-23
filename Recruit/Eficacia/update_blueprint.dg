@@ -1,0 +1,80 @@
+// void update_blueprint(bigint jobId)
+
+//jobId = "594922000001651828";
+uriUpdateJobOpening = "https://recruit.zoho.com/recruit/private/xml/JobOpenings/updateRecords?scope=recruitapi&version=2&id=" + jobId;
+jobData = zoho.recruit.getRecordById("JobOpenings",jobId);
+uriWorkFlow = "https://recruit.zoho.com/recruit/private/json/CustomModule11/getSearchRecords?scope=recruitapi&version=2&newFormat=2&selectColumns=All&fromIndex=1&toIndex=200";
+ps = jobData.getJSON("Prueba de selección");
+ren = jobData.getJSON("Realiza entrevista (Negocio)");
+fac = jobData.getJSON("Formato aplica (Cliente)");
+rptc = jobData.getJSON("Realiza prueba técnica (Cliente)");
+ese = jobData.getJSON("Estudio de segurdad");
+np = jobData.getJSON("Negocio participa");
+es = jobData.getJSON("Entrevista con el analista");
+cp = jobData.getJSON("Cliente participa");
+rptn = jobData.getJSON("Realiza prueba técnica (Negocio)");
+rec = jobData.getJSON("Realiza entrevista (Cliente)");
+searchKey = "ps" + ps + "ren" + ren + "fac" + fac + "rptc" + rptc + "ese" + ese + "np" + np + "es" + es + "cp" + cp + "rptn" + rptn + "rec" + rec;
+searchCondition = "searchCondition=(Llave de busqueda|=|" + searchKey + ")";
+headers = Map();
+headers.put("content-type","application/x-www-form-urlencoded");
+//response = postUrl(uriWorkFlow,searchCondition,headers);
+/**/
+response = invokeurl
+[
+	url :uriWorkFlow
+	type :POST
+	parameters:searchCondition
+	headers:headers
+	connection:"oauthzrecruit"
+];
+workFlowRecords = response.getJSON("response").getJSON("result");
+workFlowRecordsResponse = workFlowRecords.getJSON("CustomModule11").getJSON("row");
+hasMultiplesrecords = !isNull(workFlowRecordsResponse.get(0));
+blueprintName = "";
+if(hasMultiplesrecords)
+{
+	record = workFlowRecordsResponse.get(0);
+	recordsFL = record.getJSON("FL");
+	//Getting the fields of the record
+	for each  record in recordsFL
+	{
+		val = record.getJson('val');
+		if(val == "Blueprint")
+		{
+			blueprintName = record.getJson('content');
+		}
+	}
+}
+else
+{
+	recordsFL = workFlowRecordsResponse.getJSON("FL");
+	//Getting the fields of the record
+	for each  record in recordsFL
+	{
+		val = record.getJson('val');
+		if(val == "Blueprint")
+		{
+			blueprintName = record.getJson('content');
+		}
+	}
+}
+/**/
+/*-----START: SAVE THE IdDocmanager IN OFERTA ----*/
+xmlData = 'xmlData=<JobOpenings>' + '<row no="1"><FL val="Nombre del blueprint">' + '<![CDATA[' + blueprintName.toString() + ']]></FL></row>' + '</JobOpenings>';
+headers = Map();
+headers.put("content-type","application/x-www-form-urlencoded");
+updateBluePrintJob = Map();
+//updateBluePrintJob = postUrl(uriUpdateJobOpening,xmlData,headers,false);
+/**/
+updateBluePrintJob = invokeurl
+[
+	url :uriUpdateJobOpening
+	type :POST
+	parameters:xmlData
+	headers:headers
+	connection:"oauthzrecruit"
+];
+info updateBluePrintJob;
+/*-----END: SAVE THE IdDocmanager IN OFERTA ----*/
+//info searchCondition;

@@ -1,0 +1,146 @@
+// void banned_candidate(bigint jobId,bigint candidateId,string isBanned,string dateBirth,string requestType,string candidateStatusParam)
+/*
+isBanned = true;
+candidateId = "594922000000796093";
+jobId = "594922000001480154";
+dateBirth = "01/01/1990";
+*/
+//candidateId = "594922000000796082";
+/***START: DESASOCIATE CANDIDATE ***/
+uriAssociateJobsOpenins = "http://recruit.zoho.com/recruit/private/json/Candidates/getAssociatedJobOpenings?authtoken=06b7a101af7b05dc8820c2b63990c67e&scope=recruitapi&version=2&id=" + candidateId;
+uriChangeStatus = "https://recruit.zoho.com/recruit/private/json/Candidates/changeStatus?scope=recruitapi";
+uriLog = "https://recruit.zoho.com/recruit/private/xml/CustomModule6/addRecords?scope=recruitapi&newFormat=1&duplicateCheck=2&version=4";
+if(requestType == "Requisición")
+{
+	//START: GET ASSOCIATE JOB OPENINGS
+	responseJobs = Map();
+	headers = Map();
+	//responseJobs = getURL(uriAssociateJobsOpenins);
+	/**/
+	responseJobs = invokeurl
+	[
+		url :uriAssociateJobsOpenins
+		type :GET
+		connection:"oauthzrecruit"
+	];
+	info responseJobs;
+	jobRecords = responseJobs.getJSON("response").getJSON("result");
+	jobRecordsResponse = jobRecords.getJSON("Candidates").getJSON("row");
+	hasMultiplesrecords = !isNull(jobRecordsResponse.get(0));
+	//When has a multiples Work Flow rules		
+	if(hasMultiplesrecords)
+	{
+		activeJobs = List();
+		for each  records in jobRecordsResponse
+		{
+			recordsFL = records.getJSON("FL");
+			status = "";
+			jobActiveId = "";
+			//Getting the fields of the record
+			for each  record in recordsFL
+			{
+				val = record.getJson('val');
+				if(val == "STATUS")
+				{
+					status = record.getJson('content');
+				}
+				if(val == "JOBOPENINGID")
+				{
+					jobActiveId = record.getJson('content');
+				}
+			}
+			//GETTING JOB TYPE 
+			asociatedJobs = zoho.recruit.getRecordById("JobOpenings",jobActiveId);
+			jobType = asociatedJobs.getJSON("Tipo de solicitud");
+			//FILTERING THE ACTIVE JOBS 
+			status = status.toString();
+			isInactiveJob = false;
+			if(status == "Descartado")
+			{
+				isInactiveJob = true;
+			}
+			if(status == "Descartado en contratación")
+			{
+				isInactiveJob = true;
+			}
+			if(status == "Descalificado")
+			{
+				isInactiveJob = true;
+			}
+			if(status == "Desasociado")
+			{
+				isInactiveJob = true;
+			}
+			if(status == "Vetado")
+			{
+				isInactiveJob = true;
+			}
+			if(status == "Seleccionado en contratación")
+			{
+				isInactiveJob = true;
+			}
+			if(jobType.toString() != "Semillero" && !isInactiveJob)
+			{
+				activeJobs.add(jobActiveId);
+			}
+		}
+		info activeJobs;
+		//CHECKING IF HAS A MORE ONE ACTIVE JOB
+		if(activeJobs.size() > 1)
+		{
+			newStatus = "Desasociado";
+			hegther = activeJobs.size() - 1;
+			activeJobs.remove(hegther);
+			for each  jobActiveId in activeJobs
+			{
+				uriChangeStatus = uriChangeStatus + "&jobId=" + jobActiveId + "&candidateIds=" + candidateId + "&candidateStatus=" + newStatus;
+				xmlData = "comments='Ya tiene un proceso activo'";
+				headers = Map();
+				headers.put("content-type","application/x-www-form-urlencoded");
+				updateStatusResponse = Map();
+				//updateStatusResponse = postUrl(uriChangeStatus,xmlData,headers,false);
+				/**/
+				updateStatusResponse = invokeurl
+				[
+					url :uriChangeStatus
+					type :POST
+					parameters:xmlData
+					headers:headers
+					connection:"oauthzrecruit"
+				];
+				info updateStatusResponse;
+			}
+		}
+	}
+}
+/***END: DESASOCIATE CANDIDATE ***/
+/***START: BANNED CANDIDATE ***/
+parm = "jobId = " + jobId + " candidateId=" + candidateId + " isBanned=" + isBanned + " dateBirth=" + dateBirth;
+uriChangeStatus = "https://recruit.zoho.com/recruit/private/json/Candidates/changeStatus?scope=recruitapi";
+if(isBanned == "true")
+{
+	newStatus = "Vetado";
+	uriChangeStatus = uriChangeStatus + "&jobId=" + jobId + "&candidateIds=" + candidateId + "&candidateStatus=" + newStatus;
+	params = "comments='Candidato vetado'";
+	headers = Map();
+	headers.put("content-type","application/x-www-form-urlencoded");
+	response = invokeurl
+	[
+		url :uriChangeStatus
+		type :POST
+		parameters:params
+		headers:headers
+		connection:"oauthzrecruit"
+	];
+}
+/***END: BANNED CANDIDATE ***/
+/***START:BIRDTHDAY ***/
+edgeResponse = "";
+if(!isNull(dateBirth))
+{
+	edge = yearsDiff(dateBirth,today);
+	paramEdge = Map();
+	paramEdge.put("Edad",edge);
+	edgeResponse = zoho.recruit.updateRecord("Candidates",candidateId,paramEdge);
+}
+/***END:BIRDTHDAY ***/

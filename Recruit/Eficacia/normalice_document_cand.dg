@@ -1,0 +1,5 @@
+// void normalice_document_cand(bigint candidateId,string document)
+filteredDoc = document.remove(".").remove(",");
+update = {"Número de documento":filteredDoc};
+updateResp = zoho.recruit.updateRecord("Candidates",candidateId,update);
+info updateResp;

@@ -1,21 +1,17 @@
 
-/*
+// ======================== TESTING ========================== //
 uriCreateRequisition = "https://thunder.docm.co/TESTAPI/EficaciaCD/WebAPI/Element/Store";
-uriAccessTokenDocMngr = "https://wsintegracionprba.azurewebsites.net/oauth/token";
-jobOpeningId = "594922000001670649";
-uriDocManager = "https://wsintegracionprba.azurewebsites.net/webservice/DocManager/storeFully";
-*/
+uriAccessTokenDocMngr = "https://wsintegracion.azurewebsites.net/oauth/token";
+jobOpeningId = "594922000006013101";
+uriDocManager = "https://wsintegracion.azurewebsites.net/webservice/DocManager/storeFully";
+log_doc_mng = "1";
+// ======================== PRODUCCIÓN ========================== //
 docManagerConfiguration = "594922000001289498";
 uriAccountExecutive = "https://recruit.zoho.com/recruit/private/json/CustomModule16/getRecordById?scope=recruitapi&version=2";
 uriLog = "https://recruit.zoho.com/recruit/private/xml/CustomModule6/addRecords?scope=recruitapi&newFormat=1&duplicateCheck=2&version=4";
 uriUpdateJobOpening = "https://recruit.zoho.com/recruit/private/xml/JobOpenings/updateRecords?scope=recruitapi&version=2&id=" + jobOpeningId;
 uriGetAccessTokenFromZoho = "https://recruit.zoho.com/recruit/private/json/CustomModule15/getRecordById?scope=recruitapi&version=2&id=" + docManagerConfiguration;
 uriUpdateAccessTokenFromZoho = "https://recruit.zoho.com/recruit/private/xml/CustomModule15/updateRecords?scope=recruitapi&version=2&id=" + docManagerConfiguration + "&wfTrigger=true";
-// control de tiempo de ejecución: Brayan Dev. ====================== //
-startExecutionTime = now;
-endExecutionTime = "";
-executionTime = "";
-// ================================================================== //
 try 
 {
 	/*----START: QUERY THE ACCES TOKEN----*/
@@ -29,7 +25,7 @@ try
 		type :GET
 		connection:"oauthzrecruit"
 	];
-	tokenRocordResult = tokenRocord.getJson("response").getJson("result");
+	tokenRocordResult = tokenRocord.getJSON("response").getJSON("result");
 	existTokenRocord = !isNull(tokenRocordResult);
 	if(existTokenRocord)
 	{
@@ -43,26 +39,26 @@ try
 		//Getting the fields of the records
 		for each  record in recordsFL
 		{
-			val = record.getJson('val');
+			val = record.getJSON("val");
 			if(val == 'Modified Time')
 			{
-				accessTokenUpdateAt = record.getJson('content');
+				accessTokenUpdateAt = record.getJSON("content");
 			}
 			if(val == 'Access Token Doc Manager')
 			{
-				token = record.getJson('content');
+				token = record.getJSON("content");
 			}
 			if(val == 'usuario Doc Manager')
 			{
-				userDocMngr = record.getJson('content');
+				userDocMngr = record.getJSON("content");
 			}
 			if(val == 'contraseña Doc Manager')
 			{
-				passwordDocMngr = record.getJson('content');
+				passwordDocMngr = record.getJSON("content");
 			}
 			if(val == 'Authorization')
 			{
-				Authorization = record.getJson('content');
+				Authorization = record.getJSON("content");
 			}
 		}
 		tokenUpdateAtHours = accessTokenUpdateAt.hoursBetween(currentDate);
@@ -115,7 +111,7 @@ try
 	analystDocument = "";
 	accountExecutive = "";
 	// START: Requisicion Id
-	Idrequisicion = jobResponse.getJson("ID de la requisición");
+	Idrequisicion = jobResponse.getJSON("ID de la requisición");
 	if(isNull(Idrequisicion))
 	{
 		Idrequisicion = "";
@@ -125,7 +121,7 @@ try
 	requisicionObj.put("Value",Idrequisicion);
 	// END: Requisicion Id
 	// START: Company Name
-	companyName = jobResponse.getJson("Empresa");
+	companyName = jobResponse.getJSON("Empresa");
 	if(companyName == "Eficacia")
 	{
 		companyName = "EFICACIA";
@@ -143,7 +139,7 @@ try
 	companyNameObj.put("Value",companyName);
 	// END: Company Name
 	// START: Resquested area
-	requestArea = jobResponse.getJson("Área Solicitante");
+	requestArea = jobResponse.getJSON("Área Solicitante");
 	requestAreaValue = 5;
 	if(!isNull(requestArea))
 	{
@@ -157,7 +153,7 @@ try
 	requestAreaObj.put("Value",requestAreaValue);
 	// END: Resquested area			
 	// START: Client Name 
-	clientName = jobResponse.getJson("Client Name");
+	clientName = jobResponse.getJSON("Client Name");
 	if(isNull(clientName))
 	{
 		clientName = "";
@@ -167,11 +163,11 @@ try
 	clientNameObj.put("Value",clientName);
 	// END: Client Name 				
 	// START: Client NIT 
-	clientId = jobResponse.getJson("CLIENTID");
+	clientId = jobResponse.getJSON("CLIENTID");
 	if(!isNull(clientId))
 	{
 		clientResponse = zoho.recruit.getRecordById("Clients",clientId);
-		nit = clientResponse.getJSON('NIT');
+		nit = clientResponse.getJSON("NIT");
 		if(isNull(nit))
 		{
 			nit = "";
@@ -182,7 +178,7 @@ try
 	}
 	// END: Client NIT 
 	//START: ZONE
-	zone = jobResponse.getJson("Zona de contratación");
+	zone = jobResponse.getJSON("Zona de contratación");
 	if(isNull(zone))
 	{
 		zone = "";
@@ -192,7 +188,7 @@ try
 	zoneObj.put("Value",zone);
 	//END: ZONE
 	// START: Job Title
-	jobTitle = jobResponse.getJson("Posting Title");
+	jobTitle = jobResponse.getJSON("Posting Title");
 	if(isNull(jobTitle))
 	{
 		jobTitle = "";
@@ -202,7 +198,7 @@ try
 	jobTitleObj.put("Value",jobTitle);
 	// END: Job Title
 	// START: Number of positions
-	numberOfPositions = jobResponse.getJson("Number of Positions");
+	numberOfPositions = jobResponse.getJSON("Number of Positions");
 	if(isNull(numberOfPositions))
 	{
 		numberOfPositions = "";
@@ -212,7 +208,7 @@ try
 	numberOfPositionsObj.put("Value",numberOfPositions);
 	// END: Number of positions
 	//START: Admision date
-	dateOfAdmissionTemp = jobResponse.getJson("Fecha de Ingreso");
+	dateOfAdmissionTemp = jobResponse.getJSON("Fecha de Ingreso");
 	dateOfAdmission = null;
 	if(!isNull(dateOfAdmissionTemp))
 	{
@@ -228,7 +224,7 @@ try
 	dateOfAdmissionObj.put("Value",dateOfAdmission);
 	//END: Admision date
 	//START: analystDocument
-	analystDocument = jobResponse.getJson("Documento analista de selección responsable");
+	analystDocument = jobResponse.getJSON("Documento analista de selección responsable");
 	if(isNull(analystDocument))
 	{
 		analystDocument = "";
@@ -238,7 +234,7 @@ try
 	analystDocumentObj.put("Value",analystDocument);
 	//END: analystDocument
 	/*---- START: ACCOUNT EXECUTIVE----*/
-	accountExecutiveId = jobResponse.getJson("Responsable de la cuenta/Ejecutivo de cuenta_ID");
+	accountExecutiveId = jobResponse.getJSON("Responsable de la cuenta/Ejecutivo de cuenta_ID");
 	accountExecutive = "";
 	if(!isNull(accountExecutiveId))
 	{
@@ -252,10 +248,10 @@ try
 		fields = accountExecutiveResponse.getJSON("response").getJSON("result").getJSON("CustomModule16").getJSON("row").getJSON("FL");
 		for each  field in fields
 		{
-			fieldRecord = field.getJson('val');
+			fieldRecord = field.getJSON("val");
 			if(fieldRecord == "Documento de identidad")
 			{
-				accountExecutive = field.getJson('content');
+				accountExecutive = field.getJSON("content");
 			}
 		}
 	}
@@ -264,7 +260,7 @@ try
 	accountExecutiveObj.put("Value",accountExecutive);
 	/*---- END: ACCOUNT EXECUTIVE----*/
 	//START: auxiliaryDocument
-	auxiliaryDocument = jobResponse.getJson("Auxiliar de contratación");
+	auxiliaryDocument = jobResponse.getJSON("Auxiliar de contratación");
 	if(!isNull(auxiliaryDocument))
 	{
 		auxiliaryDocument = auxiliaryDocument.toList("(");
@@ -328,7 +324,7 @@ try
 	maxLevelStudyObj.put("Value",maxLevelStudy);
 	// END: EDICATION DETAILS	
 	// START: ACADEMIY EVIDENCE 
-	academyEvidence = jobResponse.getJson("Evidencia de la formación academica");
+	academyEvidence = jobResponse.getJSON("Evidencia de la formación academica");
 	academyEvidenceValue = "";
 	academyEvidence_7 = "";
 	if(!isNull(academyEvidence))
@@ -346,7 +342,7 @@ try
 	academyEvidenceObj.put("Value",academyEvidence_7);
 	// END: ACADEMIY EVIDENCE 	
 	// START: ACADEMIY EVIDENCE 
-	certificates = jobResponse.getJson("Cursos/certificaciones/diplomados/otros");
+	certificates = jobResponse.getJSON("Cursos/certificaciones/diplomados/otros");
 	certificatesValue = "";
 	certificates_8 = "";
 	if(!isNull(certificates))
@@ -386,15 +382,13 @@ try
 	headers.put("Authorization","Bearer " + token);
 	response = postUrl(uriDocManager,params.toString(),headers,false);
 	/*-----END: SEND DOCMANAGER REQUEST----*/
-	endExecutionTime = now;
-	executionTime = startExecutionTime.timeBetween(endExecutionTime);
 	/*-----START: LOG ----*/
-	responseText = response.getJson("responseText");
+	responseText = response.getJSON("responseText");
 	responseText = responseText.toString();
-	responseCode = response.getJson("responseCode");
+	responseCode = response.getJSON("responseCode");
 	if(log_doc_mng == "1")
 	{
-		xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod">' + responseCode + '</FL><FL val="Response">' + responseText + '</FL><FL val="Msg">Send DocManager RQ</FL><FL val="Integration">Doc Manager</FL><FL val="Method">' + uriDocManager + '</FL><FL val="Params">' + params.toString() + '</FL><FL val="Inicio de ejecución">' + startExecutionTime + '</FL><FL val="Fin de ejecución">' + endExecutionTime + '</FL><FL val="Tiempo de ejecución">' + executionTime + '</FL></row></CustomModule6>';
+		xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod">' + responseCode + '</FL><FL val="Response">' + responseText + '</FL><FL val="Msg"><![CDATA[send_docmng_requisicion]]></FL><FL val="Integration"><![CDATA[Doc Manager]]></FL><FL val="Method">https://wsintegracion.azurewebsites.net/webservice/DocManager/storeFully</FL><FL val="Params">' + params.toString() + '</FL></row></CustomModule6>';
 		headers = Map();
 		headers.put("content-type","application/x-www-form-urlencoded");
 		logResponse = Map();
@@ -431,10 +425,9 @@ try
 	/*-----END: SAVE THE IdDocmanager IN OFERTA ----*/
 }
  catch (e)
-{	info e.toString();
-	endExecutionTime = now;
-	executionTime = startExecutionTime.timeBetween(endExecutionTime);
-	xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod"></FL><FL val="Response">' + e.toString() + '</FL><FL val="Msg">Send DocManager RQ</FL><FL val="Integration">Doc Manager</FL><FL val="Method">' + uriDocManager + '</FL><FL val="Params"></FL><FL val="Nota">RQ: ' + Idrequisicion + '</FL><FL val="Inicio de ejecución">' + startExecutionTime + '</FL><FL val="Fin de ejecución">' + endExecutionTime + '</FL><FL val="Tiempo de ejecución">' + executionTime + '</FL><FL val="Crashed">TRUE</FL></row></CustomModule6>';
+{	
+  info e.toString();
+  xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod"></FL><FL val="Response">' + e.toString() + '</FL><FL val="Msg"><![CDATA[send_docmng_requisicion]]></FL><FL val="Integration"><![CDATA[Doc Manager]]></FL><FL val="Method">https://wsintegracion.azurewebsites.net/webservice/DocManager/storeFully</FL><FL val="Params"></FL></row></CustomModule6>';
 	headers = Map();
 	headers.put("content-type","application/x-www-form-urlencoded");
 	logResponse = Map();

@@ -1,0 +1,269 @@
+// void sent_adne_oferta(bigint jobOpeningId,string logElenius,string uriCreateJobADNe,string eleniusSecretKey,string eleniusApiKey)
+
+uriCustomModule7States = "https://recruit.zoho.com/recruit/private/json/CustomModule7/getRecordById?scope=recruitapi&version=2&newFormat=1";
+uriLog = "https://recruit.zoho.com/recruit/private/xml/CustomModule6/addRecords?scope=recruitapi&newFormat=1&duplicateCheck=2&version=4";
+uriComporativeJobs = "https://recruit.zoho.com/recruit/private/json/CustomModule8/getRecordById?scope=recruitapi&version=2";
+/*
+eleniusSecretKey = "ddafa1fff8e1261e633576e4ef69d06478260d4f4001ce43517ddb34573f26de";
+eleniusApiKey = "edb76ee83bcd1ff7659d42fa2b4fde63";
+uriCreateJobADNe = "https://adnesolutions.com/APItest/registrarOferta/crear/";
+jobOpeningId = "594922000001240333";
+*/
+// control de tiempo de ejecución: Brayan Dev. ====================== //
+startExecutionTime = now;
+endExecutionTime = "";
+timeExecution = "";
+// ================================================================== //
+jobLocalId = "";
+try 
+{
+	jobOpeningResponse = zoho.recruit.getRecordById("JobOpenings",jobOpeningId);
+	jobLocalId = jobOpeningResponse.getJSON("Job Opening ID");
+	// NIT , Cargo cliente, cargo agrupador
+	clientId = jobOpeningResponse.getJSON('CLIENTID');
+	if(!isNull(clientId))
+	{
+		clientResponse = zoho.recruit.getRecordById("Clients",clientId);
+		nit = clientResponse.getJSON('NIT');
+		if(isNull(nit))
+		{
+			nit = "";
+		}
+		//START: DATE FORMAT
+		createDateTime_temp = jobOpeningResponse.getJson("Created Time");
+		createDateTime_temp = createDateTime_temp.toList(" ");
+		createDate = createDateTime_temp.get(0);
+		createTime = createDateTime_temp.get(1);
+		createDate = createDate.toList("-");
+		day = createDate.get(2);
+		month = createDate.get(1);
+		year = createDate.get(0);
+		createDateTime = day + "/" + month + "/" + year + " " + createTime;
+		//END: Date format 	
+		// START: SPECIFIC CHARGE
+		perfil = jobOpeningResponse.getJSON('Cargo especifico');
+		if(isNull(perfil))
+		{
+			perfil = "";
+		}
+		// START JOB
+		job = jobOpeningResponse.getJSON('Cargo');
+		if(!isNull(job))
+		{
+			job = job.toUpperCase();
+		}
+		if(isNull(job))
+		{
+			job = "";
+		}
+		//START: GET "CARGO AGRUPADOR"
+		corporativeJobId = jobOpeningResponse.getJSON('Cargo corporativo_ID');
+		groupJob = "";
+		if(!isNull(corporativeJobId))
+		{
+			//corporativeJobResp = getUrl(uriComporativeJobs + "&id=" + corporativeJobId);
+			corporativeJobResp = invokeurl
+			[
+				url :uriComporativeJobs + "&id=" + corporativeJobId
+				type :GET
+				connection:"oauthzrecruit"
+			];
+			fieldsModule = corporativeJobResp.getJson('response').getJson('result').getJson('CustomModule8').getJson('row').getJson('FL');
+			for each  field in fieldsModule
+			{
+				val = field.getJson('val');
+				if(val == 'Cargo agrupador')
+				{
+					groupJob = field.getJson('content');
+				}
+			}
+		}
+		industry = jobOpeningResponse.getJSON('Industry');
+		if(isNull(industry))
+		{
+			industry = "";
+		}
+		// START: GENDER
+		genderTemp = jobOpeningResponse.getJson('Genero');
+		gender = '3';
+		if(genderTemp == 'Femenino')
+		{
+			gender = '2';
+		}
+		else if(genderTemp == 'Masculino')
+		{
+			gender = '1';
+		}
+		//START: EDGE	
+		edge = "";
+		edgeFrom = jobOpeningResponse.getJson('Edad desde');
+		edgeTo = jobOpeningResponse.getJson('Edad hasta');
+		if(!isNull(edgeTo) && !isNull(edgeFrom))
+		{
+			edge = "Desde " + edgeFrom + " a " + edgeTo;
+		}
+		//END: EDGE
+		//START: DEPENDENTS
+		dependents = "0";
+		dependentsTemp = jobOpeningResponse.getJSON("Personas a cargo");
+		if(dependentsTemp == "true")
+		{
+			dependents = "1";
+		}
+		//END: DEPENDENTS
+		//***** START: ADDRES INFORMATION***//
+		cityId = jobOpeningResponse.getJSON('Ciudad labor integración_ID');
+		cityCode = "";
+		//GETTING THE CITY CODE 
+		if(!isNull(cityId))
+		{
+			//cityResponse = getUrl(uriCustomModule7States + "&id=" + cityId);
+			cityResponse = invokeurl
+			[
+				url :uriCustomModule7States + "&id=" + cityId
+				type :GET
+				connection:"oauthzrecruit"
+			];
+			fieldsCityModule = cityResponse.getJson('response').getJson('result').getJson('CustomModule7').getJson('row').getJson('FL');
+			for each  fieldCityModule in fieldsCityModule
+			{
+				fieldRecord = fieldCityModule.getJson('val');
+				if(fieldRecord == 'Codigo')
+				{
+					cityCode = fieldCityModule.getJson('content');
+				}
+			}
+		}
+		//***** END: ADDRES INFORMATION***//
+		// START: EDICATION DETAILS
+		maxLevelStudy = jobOpeningResponse.getJSON("Nivel de estudios");
+		if(!isNull(maxLevelStudy))
+		{
+			if(maxLevelStudy == 'Pos doctorado')
+			{
+				maxLevelStudy = 'Doctorado';
+			}
+			if(maxLevelStudy == 'Maestría')
+			{
+				maxLevelStudy = 'Maestria';
+			}
+			if(maxLevelStudy == 'Tecnólogo')
+			{
+				maxLevelStudy = 'Tecnológico';
+			}
+			if(maxLevelStudy == 'Técnico')
+			{
+				maxLevelStudy = 'Técnico Laboral';
+			}
+			if(maxLevelStudy == 'Pregrado')
+			{
+				maxLevelStudy = 'Universitario';
+			}
+		}
+		else
+		{
+			maxLevelStudy = "";
+		}
+		// END: EDICATION DETAILS
+		// START: JOB EXPERIENCE 
+		experience = jobOpeningResponse.getJSON("Cargo de experiencia");
+		if(!isNull(experience))
+		{
+			experience = experience.toUpperCase();
+		}
+		if(isNull(experience))
+		{
+			experience = "NA";
+		}
+		// END: JOB EXPERIENCE DURATION
+		// START: JOB EXPERIENCE DURATION
+		experienceDuration = jobOpeningResponse.getJSON("Duración cargo de experiencia (meses)");
+		if(isNull(experienceDuration))
+		{
+			experienceDuration = 0;
+		}
+		// END: JOB EXPERIENCE DURATION
+		// START: SALARY
+		salaryFrom = jobOpeningResponse.getJSON("Salario desde");
+		if(isNull(salaryFrom))
+		{
+			salaryFrom = "";
+		}
+		salaryTo = jobOpeningResponse.getJSON("Salario hasta");
+		if(isNull(salaryTo))
+		{
+			salaryTo = "";
+		}
+		// END: SALARY
+		params = Map();
+		params.put("Marca",createDateTime);
+		params.put("ID_OFERTA_EF",jobOpeningId);
+		params.put("Cliente",nit);
+		//DEBE DE REVISAR PORQUE EL NIT SUPERA LOS 4 DIGITOS
+		params.put("Perfil",perfil);
+		params.put("Cargo",groupJob);
+		params.put("Sector",industry);
+		params.put("Genero",gender);
+		params.put("Edad",edge);
+		params.put("PersonasACargo",dependents);
+		params.put("CodigoCiudadLabor",cityCode);
+		params.put("CodigoCiudadContratacion",cityCode);
+		params.put("NivelEducativo",maxLevelStudy);
+		params.put("CargoExperiencia",experience);
+		params.put("Duracion",experienceDuration);
+		//CONST VALUES
+		params.put("PreferenciaLaboralCompleta","1");
+		params.put("PreferenciaLaboralParcial","3,4");
+		params.put("PreferenciaLaboralFinSemana","1");
+		params.put("SalarioDesde",salaryFrom);
+		params.put("SalarioHasta",salaryTo);
+		params.put("Informatica","1");
+		params.put("api_key",eleniusApiKey);
+		params.put("secret",eleniusSecretKey);
+		headers = Map();
+		//info params.toString();
+		response = Map();
+		headers.put("content-type","application/json");
+		response = postUrl(uriCreateJobADNe,params.toString(),headers,false);
+		endExecutionTime = now;
+		timeExecution = startExecutionTime.timeBetween(endExecutionTime);
+		responseText = response.getJson("responseText");
+		responseText = responseText.toString();
+		responseCode = response.getJson("responseCode");
+		if(logElenius == "1")
+		{
+			xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod">' + responseCode + '</FL><FL val="Response">' + responseText + '</FL><FL val="Msg"><![CDATA[sent_adne_oferta]]></FL><FL val="Integration"><![CDATA[Elenius]]></FL><FL val="Method">registrarOferta/crear/</FL><FL val="Params">' + params.toString() + '</FL><FL val="Inicio de ejecución">' + startExecutionTime + '</FL><FL val="Fin de ejecución">' + endExecutionTime + '</FL><FL val="Tiempo de ejecución">' + timeExecution + '</FL><FL val="Nota">Oferta ID URL: ' + jobOpeningId + ', ID Oferta: ' + jobLocalId + '</FL></row></CustomModule6>';
+			headers = Map();
+			headers.put("content-type","application/x-www-form-urlencoded");
+			logResponse = Map();
+			//logResponse = postUrl(uriLog,xmlData,headers,false);
+			logResponse = invokeurl
+			[
+				url :uriLog
+				type :POST
+				parameters:xmlData
+				headers:headers
+				detailed:true
+				connection:"oauthzrecruit"
+			];
+		}
+	}
+}
+ catch (e)
+{	endExecutionTime = now;
+	timeExecution = startExecutionTime.timeBetween(endExecutionTime);
+	xmlData = 'xmlData=<CustomModule6><row no="1"><FL val="Cod"></FL><FL val="Response">' + e.toString() + '</FL><FL val="Msg">sent_adne_oferta</FL><FL val="Integration">Elenius</FL><FL val="Method">' + uriCreateJobADNe + '</FL><FL val="Params"></FL><FL val="Inicio de ejecución">' + startExecutionTime + '</FL><FL val="Fin de ejecución">' + endExecutionTime + '</FL><FL val="Tiempo de ejecución">' + timeExecution + '</FL><FL val="Nota">Oferta ID URL: ' + jobOpeningId + ', ID Oferta: ' + jobLocalId + '</FL><FL val="Crashed">TRUE</FL></row></CustomModule6>';
+	headers = Map();
+	headers.put("content-type","application/x-www-form-urlencoded");
+	logResponse = Map();
+	//logResponse = postUrl(uriLog,xmlData,headers,false);
+	logResponse = invokeurl
+	[
+		url :uriLog
+		type :POST
+		parameters:xmlData
+		headers:headers
+		detailed:true
+		connection:"oauthzrecruit"
+	];
+}

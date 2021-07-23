@@ -1,0 +1,469 @@
+// void set_work_flow(bigint jobId)
+//jobId = "594922000005628990";
+uriGetWorkFlows = "https://recruit.zoho.com/recruit/private/json/CustomModule11/getRecordById?scope=recruitapi&version=2";
+uriSearchWorkFlow = "https://recruit.zoho.com/recruit/private/json/CustomModule11/getSearchRecords?scope=recruitapi&version=2&newFormat=2&selectColumns=All&fromIndex=1&toIndex=200";
+uriCustomModule7States = "https://recruit.zoho.com/recruit/private/json/CustomModule7/getRecordById?scope=recruitapi&version=2&newFormat=1";
+uriUpdateJobOpening = "https://recruit.zoho.com/recruit/private/xml/JobOpenings/updateRecords?scope=recruitapi&version=2&id=" + jobId;
+//This Invoke is for do a simulation of a Timeout and sleep the execution
+sleepResponse = invokeurl
+[
+	url :"https://wsintegracionphp.azurewebsites.net/api/v1/sleep?time=20"
+	type :GET
+];
+jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId);
+clientId = jobResponse.getJSON("CLIENTID");
+specificChargeId = jobResponse.getJSON("Cargo especifico_ID");
+clientName = jobResponse.getJSON("Client Name");
+setProcess = false;
+try 
+{
+	if(!isNull(clientId) && !isNull(specificChargeId))
+	{
+		/*----START: getSearchRecords  IN THE MODULE "Flujos de trabajo"----*/
+		clientName = zoho.encryption.urlEncode(clientName.toString());
+		postFields = 'searchCondition=(Cliente|=|' + clientName.toString() + ')';
+		headers = Map();
+		headers.put("content-type","application/x-www-form-urlencoded");
+		uriSearchWorkFlowResponse = Map();
+		//uriSearchWorkFlowResponse = postUrl(uriSearchWorkFlow,postFields,headers,false);
+		uriSearchWorkFlowResponse = invokeurl
+		[
+			url :uriSearchWorkFlow
+			type :POST
+			parameters:postFields.toString()
+			headers:headers
+			detailed:true
+			connection:"oauthzrecruit"
+		];
+		workFlowRecords = uriSearchWorkFlowResponse.getJSON("responseText").getJSON("response").getJSON("result");
+		workFlowRecordsResponse = workFlowRecords.getJSON("CustomModule11").getJSON("row");
+		hasMultiplesrecords = !isNull(workFlowRecordsResponse.get(0));
+		//***** START: ADDRES INFORMATION***//
+		cityId = jobResponse.getJSON('Ciudad labor_ID');
+		populationType = "";
+		//GETTING THE POPULATION TYPE
+		if(!isNull(cityId))
+		{
+			//cityResponse = getUrl(uriCustomModule7States + "&id=" + cityId);
+			cityResponse = invokeurl
+			[
+				url :uriCustomModule7States + "&id=" + cityId
+				type :GET
+				connection:"oauthzrecruit"
+			];
+			fieldsCityModule = cityResponse.getJson('response').getJson('result').getJson('CustomModule7').getJson('row').getJson('FL');
+			for each  fieldCityModule in fieldsCityModule
+			{
+				fieldRecord = fieldCityModule.getJson('val');
+				if(fieldRecord == 'Tipo de población')
+				{
+					populationType = fieldCityModule.getJson('content');
+				}
+			}
+		}
+		//***** END: ADDRES INFORMATION***//	
+		workFlowClienteId = "";
+		workFlowspecificChargeId = "";
+		workFlowId = "";
+		hasTestSelection = "";
+		businessInterview = "";
+		applyClientFormat = "";
+		doTechnicalClientTest = "";
+		formatName = "";
+		blueprintName = "";
+		typeConvocatory = "";
+		securityStudy = "";
+		businessParticipates = "";
+		selectionInterview = "";
+		clientParticipates = "";
+		doTecnicalTestBusiness = "";
+		clientInterview = "";
+		ANSMainCityRecruitmentDays = "0";
+		ANSRecruitmentCityPopulationDays = "0";
+		ANSBusinessDays = "0";
+		ANSIntermediateCityRecruitmentDays = "0";
+		ANSSelectionDays = "0";
+		ANSCustomerDays = "0";
+		if(hasMultiplesrecords)
+		{
+			//When has a multiples Work Flow rules				
+			for each  records in workFlowRecordsResponse
+			{
+				recordsFL = records.getJSON("FL");
+				//Getting the fields of the record
+				for each  record in recordsFL
+				{
+					val = record.getJson('val');
+					/*START: WORK FLOW INFORMATIONS FIELDS*/
+					if(val == "Cliente_ID")
+					{
+						workFlowClienteId = record.getJson('content');
+					}
+					if(val == "Cargo especifico_ID")
+					{
+						workFlowspecificChargeId = record.getJson('content');
+					}
+					if(val == "Prueba de selección")
+					{
+						hasTestSelection = record.getJson('content');
+					}
+					if(val == "Realiza entrevista (Negocio)")
+					{
+						businessInterview = record.getJson('content');
+					}
+					if(val == "Formato aplica (Cliente)")
+					{
+						applyClientFormat = record.getJson('content');
+					}
+					if(val == "Realiza prueba técnica (Cliente)")
+					{
+						doTechnicalClientTest = record.getJson('content');
+					}
+					if(val == "Nombre del formato")
+					{
+						formatName = record.getJson('content');
+					}
+					if(val == "Blueprint")
+					{
+						blueprintName = record.getJson('content');
+					}
+					if(val == "Tipo de convocatoria")
+					{
+						typeConvocatory = record.getJson('content');
+					}
+					if(val == "Estudio de seguridad")
+					{
+						securityStudy = record.getJson('content');
+					}
+					if(val == "Negocio participa")
+					{
+						businessParticipates = record.getJson('content');
+					}
+					if(val == "Entrevista con el analista")
+					{
+						selectionInterview = record.getJson('content');
+					}
+					if(val == "Cliente participa")
+					{
+						clientParticipates = record.getJson('content');
+					}
+					if(val == "Realiza prueba técnica (Negocio)")
+					{
+						doTecnicalTestBusiness = record.getJson('content');
+					}
+					if(val == "Realiza entrevista (Cliente)")
+					{
+						clientInterview = record.getJson('content');
+					}
+					if(val == "Nombre prueba de selección")
+					{
+						testSelectionName = record.getJson('content');
+					}
+					/*START: SERVICE LEVEL AGREEMENT (SLA) FIELDS*/
+					if(val == "ANS Reclutamiento Ciudad Principal en días")
+					{
+						ANSMainCityRecruitmentDays = record.getJson('content');
+						if(ANSMainCityRecruitmentDays == "null")
+						{
+							ANSMainCityRecruitmentDays = "0";
+						}
+					}
+					if(val == "ANS Reclutamiento Ciudad Población en días")
+					{
+						ANSRecruitmentCityPopulationDays = record.getJson('content');
+						if(ANSRecruitmentCityPopulationDays == "null")
+						{
+							ANSRecruitmentCityPopulationDays = "0";
+						}
+					}
+					if(val == "ANS Negocio en días")
+					{
+						ANSBusinessDays = record.getJson('content');
+						if(ANSBusinessDays == "null")
+						{
+							ANSBusinessDays = "0";
+						}
+					}
+					if(val == "ANS Reclutamiento Ciudad Intermedia en días")
+					{
+						ANSIntermediateCityRecruitmentDays = record.getJson('content');
+						if(ANSIntermediateCityRecruitmentDays == "null")
+						{
+							ANSIntermediateCityRecruitmentDays = "0";
+						}
+					}
+					if(val == "ANS Selección en días")
+					{
+						ANSSelectionDays = record.getJson('content');
+						if(ANSSelectionDays == "null")
+						{
+							ANSSelectionDays = "0";
+						}
+					}
+					if(val == "ANS Cliente en días")
+					{
+						ANSCustomerDays = record.getJson('content');
+						if(ANSCustomerDays == "null")
+						{
+							ANSCustomerDays = "0";
+						}
+					}
+				}
+				//Filtering the record, for find the work flow rule
+				//info clientId +'=='+ workFlowClienteId +'&&'+ specificChargeId +'=='+ workFlowspecificChargeId;
+				if(clientId == workFlowClienteId && specificChargeId == workFlowspecificChargeId)
+				{
+					setProcess = true;
+					//Break for stop the blucle query				
+					break;
+				}
+			}
+		}
+		else
+		{
+			recordsFL = workFlowRecordsResponse.getJSON("FL");
+			//Getting the fields of the record
+			for each  record in recordsFL
+			{
+				val = record.getJson('val');
+				/*START: WORK FLOW INFORMATIONS FIELDS*/
+				if(val == "Cliente_ID")
+				{
+					workFlowClienteId = record.getJson('content');
+				}
+				if(val == "Cargo especifico_ID")
+				{
+					workFlowspecificChargeId = record.getJson('content');
+				}
+				if(val == "Prueba de selección")
+				{
+					hasTestSelection = record.getJson('content');
+				}
+				if(val == "Realiza entrevista (Negocio)")
+				{
+					businessInterview = record.getJson('content');
+				}
+				if(val == "Formato aplica (Cliente)")
+				{
+					applyClientFormat = record.getJson('content');
+				}
+				if(val == "Realiza prueba técnica (Cliente)")
+				{
+					doTechnicalClientTest = record.getJson('content');
+				}
+				if(val == "Nombre del formato")
+				{
+					formatName = record.getJson('content');
+				}
+				if(val == "Blueprint")
+				{
+					blueprintName = record.getJson('content');
+				}
+				if(val == "Tipo de convocatoria")
+				{
+					typeConvocatory = record.getJson('content');
+				}
+				if(val == "Estudio de seguridad")
+				{
+					securityStudy = record.getJson('content');
+				}
+				if(val == "Negocio participa")
+				{
+					businessParticipates = record.getJson('content');
+				}
+				if(val == "Entrevista con el analista")
+				{
+					selectionInterview = record.getJson('content');
+				}
+				if(val == "Cliente participa")
+				{
+					clientParticipates = record.getJson('content');
+				}
+				if(val == "Realiza prueba técnica (Negocio)")
+				{
+					doTecnicalTestBusiness = record.getJson('content');
+				}
+				if(val == "Realiza entrevista (Cliente)")
+				{
+					clientInterview = record.getJson('content');
+				}
+				if(val == "Nombre prueba de selección")
+				{
+					testSelectionName = record.getJson('content');
+				}
+				/*START: SERVICE LEVEL AGREEMENT (SLA) FIELDS*/
+				if(val == "ANS Reclutamiento Ciudad Principal en días" && record.getJson('content') != "null")
+				{
+					ANSMainCityRecruitmentDays = record.getJson('content');
+				}
+				if(val == "ANS Reclutamiento Ciudad Población en días" && record.getJson('content') != "null")
+				{
+					ANSRecruitmentCityPopulationDays = record.getJson('content');
+				}
+				if(val == "ANS Negocio en días" && record.getJson('content') != "null")
+				{
+					ANSBusinessDays = record.getJson('content');
+				}
+				if(val == "ANS Reclutamiento Ciudad Intermedia en días" && record.getJson('content') != "null")
+				{
+					ANSIntermediateCityRecruitmentDays = record.getJson('content');
+				}
+				if(val == "ANS Selección en días" && record.getJson('content') != "null")
+				{
+					ANSSelectionDays = record.getJson('content');
+				}
+				if(val == "ANS Cliente en días" && record.getJson('content') != "null")
+				{
+					ANSCustomerDays = record.getJson('content');
+				}
+			}
+			//Filtering the record, for find the work flow rule
+			//info clientId +'=='+ workFlowClienteId +'&&'+ specificChargeId +'=='+ workFlowspecificChargeId;
+			if(clientId == workFlowClienteId && specificChargeId == workFlowspecificChargeId)
+			{
+				setProcess = true;
+			}
+		}
+		/*
+	info hasTestSelection;
+	info businessInterview;
+	info applyClientFormat;
+	info doTechnicalClientTest;
+	info formatName;
+	info blueprintName;
+	info typeConvocatory;
+	info securityStudy;
+	info businessParticipates;
+	info selectionInterview;
+	info clientParticipates;
+	info doTecnicalTestBusiness;
+	info clientInterview;
+	
+	info "SERVICE LEVEL AGREEMENT (SLA) FIELDS"	;
+	info ANSMainCityRecruitmentDays;
+	info ANSRecruitmentCityPopulationDays;
+	info ANSBusinessDays;
+	info ANSIntermediateCityRecruitmentDays;
+	info ANSSelectionDays;
+	info ANSCustomerDays;
+	*/
+		if(setProcess)
+		{
+			// START: Filtering the population type
+			ANSRecruitmentInDays = 0;
+			if(populationType == "Ciudad principal")
+			{
+				ANSRecruitmentInDays = ANSMainCityRecruitmentDays;
+			}
+			if(populationType == "Ciudad intermedia")
+			{
+				ANSRecruitmentInDays = ANSIntermediateCityRecruitmentDays;
+			}
+			if(populationType == "Población")
+			{
+				ANSRecruitmentInDays = ANSRecruitmentCityPopulationDays;
+			}
+			// END: Filtering the population type
+			ANSTotal = ANSCustomerDays.toNumber() + ANSSelectionDays.toNumber() + ANSBusinessDays.toNumber() + ANSRecruitmentInDays.toNumber();
+			requiredDate = jobResponse.getJSON("Fecha de solicitud");
+			/*START: ADD DAYS*/
+			//ANS Reclutamiento (Fecha)
+			ANSRecruitmentDate = null;
+			if(ANSRecruitmentInDays > 0)
+			{
+				ANSRecruitmentDate = requiredDate.addDay(ANSRecruitmentInDays);
+				day = ANSRecruitmentDate.getDay();
+				month = ANSRecruitmentDate.getMonth();
+				year = ANSRecruitmentDate.getYear();
+				if(day.len() == 1)
+				{
+					day = "0" + day;
+				}
+				if(month.len() == 1)
+				{
+					month = "0" + month;
+				}
+				ANSRecruitmentDate = month + "/" + day + "/" + year;
+			}
+			//ANS Selección (Fecha)
+			ANSSelectionDate = null;
+			if(!isNull(ANSRecruitmentDate))
+			{
+				ANSSelectionDate = ANSRecruitmentDate.toDate().addDay(ANSSelectionDays.toNumber());
+				day = ANSSelectionDate.getDay();
+				month = ANSSelectionDate.getMonth();
+				year = ANSSelectionDate.getYear();
+				if(day.len() == 1)
+				{
+					day = "0" + day;
+				}
+				if(month.len() == 1)
+				{
+					month = "0" + month;
+				}
+				ANSSelectionDate = month + "/" + day + "/" + year;
+			}
+			//ANS Negocio (Fecha)
+			ANSBusinessDate = null;
+			if(!isNull(ANSSelectionDate))
+			{
+				ANSBusinessDate = ANSSelectionDate.toDate().addDay(ANSBusinessDays.toNumber());
+				day = ANSBusinessDate.getDay();
+				month = ANSBusinessDate.getMonth();
+				year = ANSBusinessDate.getYear();
+				if(day.len() == 1)
+				{
+					day = "0" + day;
+				}
+				if(month.len() == 1)
+				{
+					month = "0" + month;
+				}
+				ANSBusinessDate = month + "/" + day + "/" + year;
+			}
+			//ANS Cliente (Fecha)
+			ANSClientDate = null;
+			MaximumOfferCloseDate = null;
+			if(!isNull(ANSBusinessDate))
+			{
+				ANSClientDate = ANSBusinessDate.toDate().addDay(ANSCustomerDays.toNumber());
+				day = ANSClientDate.getDay();
+				month = ANSClientDate.getMonth();
+				year = ANSClientDate.getYear();
+				if(day.len() == 1)
+				{
+					day = "0" + day;
+				}
+				if(month.len() == 1)
+				{
+					month = "0" + month;
+				}
+				ANSClientDate = month + "/" + day + "/" + year;
+				//Fecha máxima de cierre oferta
+				MaximumOfferCloseDate = ANSClientDate;
+			}
+			/*END: ADD DAYS*/
+			/*-----START: SAVE THE IdDocmanager IN OFERTA ----*/
+			xmlData = 'xmlData=<JobOpenings>' + '<row no="1">' + '<FL val="Tipo de convocatoria">' + '<![CDATA[' + typeConvocatory.toString() + ']]>' + '</FL>' + '<FL val="Prueba de selección">' + '<![CDATA[' + hasTestSelection.toString() + ']]>' + '</FL>' + '<FL val="Negocio participa">' + '<![CDATA[' + businessParticipates.toString() + ']]>' + '</FL>' + '<FL val="Entrevista con el analista">' + '<![CDATA[' + selectionInterview.toString() + ']]>' + '</FL>' + '<FL val="Cliente participa">' + '<![CDATA[' + clientParticipates.toString() + ']]>' + '</FL>' + '<FL val="Realiza entrevista (Negocio)">' + '<![CDATA[' + businessInterview.toString() + ']]>' + '</FL>' + '<FL val="Realiza prueba técnica (Negocio)">' + '<![CDATA[' + doTecnicalTestBusiness.toString() + ']]>' + '</FL>' + '<FL val="Formato aplica (Cliente)">' + '<![CDATA[' + applyClientFormat.toString() + ']]>' + '</FL>' + '<FL val="Nombre del blueprint">' + '<![CDATA[' + blueprintName.toString() + ']]>' + '</FL>' + '<FL val="Nombre del formato">' + '<![CDATA[' + formatName.toString() + ']]>' + '</FL>' + '<FL val="Realiza prueba técnica (Cliente)">' + '<![CDATA[' + doTechnicalClientTest.toString() + ']]>' + '</FL>' + '<FL val="Realiza entrevista (Cliente)">' + '<![CDATA[' + clientInterview.toString() + ']]>' + '</FL>' + '<FL val="Estudio de segurdad">' + '<![CDATA[' + securityStudy.toString() + ']]>' + '</FL>' + '<FL val="ANS Reclutamiento (En días)">' + '<![CDATA[' + ANSRecruitmentInDays.toString() + ']]>' + '</FL>' + '<FL val="ANS Negocio (En días)">' + '<![CDATA[' + ANSBusinessDays.toString() + ']]>' + '</FL>' + '<FL val="ANS Selección (En días)">' + '<![CDATA[' + ANSSelectionDays.toString() + ']]>' + '</FL>' + '<FL val="ANS Cliente (En días)">' + '<![CDATA[' + ANSCustomerDays.toString() + ']]>' + '</FL>' + '<FL val="ANS Total (En días)">' + '<![CDATA[' + ANSTotal.toString() + ']]>' + '</FL>' + '<FL val="ANS Reclutamiento (Fecha)">' + ANSRecruitmentDate.toString() + '</FL>' + '<FL val="ANS Selección (Fecha)">' + ANSSelectionDate.toString() + '</FL>' + '<FL val="ANS Negocio (Fecha)">' + ANSBusinessDate.toString() + '</FL>' + '<FL val="ANS Cliente (Fecha)">' + ANSClientDate.toString() + '</FL>' + '<FL val="Fecha máxima de cierre oferta">' + MaximumOfferCloseDate.toString() + '</FL>' + '<FL val="Nombre prueba de selección">' + '<![CDATA[' + testSelectionName.toString() + ']]>' + '</FL>' + '</row>' + '</JobOpenings>';
+			//info xmlData;
+			headers = Map();
+			headers.put("content-type","application/x-www-form-urlencoded");
+			updateJob = Map();
+			//updateJob = postUrl(uriUpdateJobOpening,xmlData,headers,false);
+			updateJob = invokeurl
+			[
+				url :uriUpdateJobOpening
+				type :POST
+				parameters:xmlData.toString()
+				headers:headers
+				detailed:true
+				connection:"oauthzrecruit"
+			];
+			//info updateJob;
+			/*-----END: SAVE THE IdDocmanager IN OFERTA ----*/
+		}
+	}
+}
+ catch (e)
+{	info e.toString();
+}

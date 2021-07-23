@@ -1,0 +1,93 @@
+// void Reject_candidate(bigint candidateId)
+candidateId = "594922000001689575";
+uriAssociateJobsOpenins = "http://recruit.zoho.com/recruit/private/json/Candidates/getAssociatedJobOpenings?authtoken=06b7a101af7b05dc8820c2b63990c67e&scope=recruitapi&version=2&id=" + candidateId;
+uriChangeStatus = "https://recruit.zoho.com/recruit/private/json/Candidates/changeStatus?authtoken=06b7a101af7b05dc8820c2b63990c67e&scope=recruitapi";
+//START: GET ASSOCIATE JOB OPENINGS
+responseJobs = Map();
+headers = Map();
+responseJobs = getURL(uriAssociateJobsOpenins);
+responseJobs = invokeurl
+[
+	url :uriAssociateJobsOpenins
+	type :GET
+	connection:"oauthzrecruit"
+];
+jobRecords = responseJobs.getJSON("response").getJSON("result");
+jobRecordsResponse = jobRecords.getJSON("Candidates").getJSON("row");
+hasMultiplesrecords = !isNull(jobRecordsResponse.get(0));
+//When has a multiples Work Flow rules          
+activeJobs = List();
+for each  records in jobRecordsResponse
+{
+	recordsFL = records.getJSON("FL");
+	status = "";
+	jobActiveId = "";
+	//Getting the fields of the record
+	for each  record in recordsFL
+	{
+		val = record.getJson('val');
+		if(val == "STATUS")
+		{
+			status = record.getJson('content');
+		}
+		if(val == "JOBOPENINGID")
+		{
+			jobActiveId = record.getJson('content');
+		}
+	}
+	//FILTERING THE ACTIVE JOBS 
+	status = status.toString();
+	info status;
+	if(status == "Descartado" || status == "Descalificado" || status == "Seleccionado en contratación" || status == "Desasociado" || status == "Vetado")
+	{
+	}
+	else
+	{
+		activeJobs.add(jobActiveId);
+	}
+}
+info "Before:" + activeJobs;
+//CHECKING IF HAS A MORE ONE ACTIVE JOB
+if(activeJobs.size() > 1)
+{
+	newStatus = "Desasociado";
+	hegther = activeJobs.size() - 1;
+	activeJobs.remove(hegther);
+	info "After:" + activeJobs;
+	jobActiveId = '594922000001694948';
+	uriChangeStatus = uriChangeStatus + '&jobId=' + jobActiveId + '&candidateIds=' + candidateId + '&candidateStatus=' + newStatus;
+	xmlData = "comments='Ya tiene un proceso activo'";
+	headers = Map();
+	headers.put("content-type","application/x-www-form-urlencoded");
+	updateStatusResponse = Map();
+	updateStatusResponse = invokeurl
+	[
+		url :uriChangeStatus
+		type :POST
+		parameters:xmlData
+		headers:headers
+		connection:"oauthzrecruit"
+	];
+	info updateStatusResponse;
+	// 'element' variable contains "CRM"
+	for each  jobActiveId in activeJobs
+	{
+		/*
+		uriChangeStatus = uriChangeStatus + '&jobId=' + jobActiveId + '&candidateIds=' + candidateId + '&candidateStatus=' + newStatus;
+		xmlData = "comments='Ya tiene un proceso activo'";
+		headers = Map();
+		headers.put("content-type","application/x-www-form-urlencoded");
+		updateStatusResponse = Map();
+		updateStatusResponse = invokeurl
+		[
+			url :uriChangeStatus
+			type :POST
+			parameters:xmlData
+			headers:headers
+			connection:"oauthzrecruit"
+		];
+		info updateStatusResponse;
+		*/
+	}
+}
+//END: GET ASSOCIATE JOB OPENINGS
