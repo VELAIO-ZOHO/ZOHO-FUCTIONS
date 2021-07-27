@@ -1,5 +1,11 @@
-// void normalice_document_cand(bigint candidateId,string document)
+/**
+ * This function recive the candidate and remove from his document the caracters (,.)
+ * @param candidateId ID candidate to update
+ * @param document document to normalize
+ * Made by: Brayan Devia Machado [velaio.com]
+ * version: 1.2
+ */
 filteredDoc = document.remove(".").remove(",");
 update = {"Número de documento":filteredDoc};
-updateResp = zoho.recruit.updateRecord("Candidates",candidateId,update);
+updateResp = zoho.recruit.updateRecord("Candidates",candidateId,update,"oauthzrecruit");
 info updateResp;

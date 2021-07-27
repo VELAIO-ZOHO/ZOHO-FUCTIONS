@@ -2,7 +2,7 @@
 
 //jobId = "594922000001651828";
 uriUpdateJobOpening = "https://recruit.zoho.com/recruit/private/xml/JobOpenings/updateRecords?scope=recruitapi&version=2&id=" + jobId;
-jobData = zoho.recruit.getRecordById("JobOpenings",jobId);
+jobData = zoho.recruit.getRecordById("JobOpenings",jobId,"oauthzrecruit");
 uriWorkFlow = "https://recruit.zoho.com/recruit/private/json/CustomModule11/getSearchRecords?scope=recruitapi&version=2&newFormat=2&selectColumns=All&fromIndex=1&toIndex=200";
 ps = jobData.getJSON("Prueba de selección");
 ren = jobData.getJSON("Realiza entrevista (Negocio)");

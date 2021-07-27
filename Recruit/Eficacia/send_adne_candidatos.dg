@@ -20,13 +20,13 @@ uriCreateCandidateADNe = "https://adnesolutions.com/APItest/testCandidato/crear/
 */
 //*****START: GETING THE ADNeCandidato PARAMS***//
 ADNeCandidatoModule = "CustomModule1";
-ADNeCandidatoResponse = zoho.recruit.getRecordById("CustomModule1",adneCandidatoId);
+ADNeCandidatoResponse = zoho.recruit.getRecordById("CustomModule1",adneCandidatoId, "oauthzrecruit");
 candidateIdADNe = ADNeCandidatoResponse.getJson("Candidato Id");
 queryParms = "Candidate ID|=|" + candidateIdADNe;
 columns = "All";
-candidatesResponse = zoho.recruit.searchRecords("Candidates",queryParms,1,1,columns);
+candidatesResponse = zoho.recruit.searchRecords("Candidates",queryParms,1,1,columns, "oauthzrecruit");
 candidateId = candidatesResponse.getJson("CANDIDATEID");
-candidatesResponse = zoho.recruit.getRecordById("Candidates",candidateId);
+candidatesResponse = zoho.recruit.getRecordById("Candidates",candidateId, "oauthzrecruit");
 //*****END: GETING THE ADNeCandidato PARAMS***//
 uriUpdateCandidates = "https://recruit.zoho.com/recruit/private/xml/Candidates/updateRecords?scope=recruitapi&version=2&id=" + candidateId + "&wfTrigger=true";
 uriTabularExperienceDetails = "https://recruit.zoho.com/recruit/private/json/Candidates/getTabularRecords?authtoken=06b7a101af7b05dc8820c2b63990c67e&scope=recruitapi&id=" + candidateId + "&tabularNames=(Experience Details)";
@@ -39,7 +39,7 @@ try
 {
 	//*****UPDATING ADNecandidato, seting the candidateId***//
 	ADNeCandidatoResponse.put("Candidato_ID",candidateId);
-	response = zoho.recruit.updateRecord("CustomModule1",adneCandidatoId,ADNeCandidatoResponse);
+	response = zoho.recruit.updateRecord("CustomModule1",adneCandidatoId,ADNeCandidatoResponse, "oauthzrecruit");
 	//*****START:GETING THE LOCATIONS***//
 	fullName = candidatesResponse.getJson('First Name') + ' ' + candidatesResponse.getJson('Last Name');
 	fullName = zoho.encryption.urlEncode(fullName);
@@ -115,7 +115,7 @@ try
 				if(geographicLocationCandidateId == candidateId && typeLocation == 'Domicilio')
 				{
 					//GETTING THE STATE CODE 
-					stateResponse = zoho.recruit.getRecordById("CustomModule5",stateId);
+					stateResponse = zoho.recruit.getRecordById("CustomModule5",stateId, "oauthzrecruit");
 					stateCode = stateResponse.getJson("Codigo");
 					//GETTING THE CITY CODE 
 					//cityResponse = getUrl(uriCustomModule7States + '&id=' + cityId);
@@ -186,7 +186,7 @@ try
 			if(geographicLocationCandidateId == candidateId && typeLocation == 'Domicilio')
 			{
 				//GETTING THE STATE CODE 
-				stateResponse = zoho.recruit.getRecordById("CustomModule5",stateId);
+				stateResponse = zoho.recruit.getRecordById("CustomModule5",stateId, "oauthzrecruit");
 				stateCode = stateResponse.getJson("Codigo");
 				//GETTING THE CITY CODE 
 				//cityResponse = getUrl(uriCustomModule7States + '&id=' + cityId);
