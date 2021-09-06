@@ -17,13 +17,13 @@ timeExecution = "";
 jobLocalId = "";
 try 
 {
-	jobOpeningResponse = zoho.recruit.getRecordById("JobOpenings",jobOpeningId);
+	jobOpeningResponse = zoho.recruit.getRecordById("JobOpenings",jobOpeningId, "oauthzrecruit");
 	jobLocalId = jobOpeningResponse.getJSON("Job Opening ID");
 	// NIT , Cargo cliente, cargo agrupador
 	clientId = jobOpeningResponse.getJSON('CLIENTID');
 	if(!isNull(clientId))
 	{
-		clientResponse = zoho.recruit.getRecordById("Clients",clientId);
+		clientResponse = zoho.recruit.getRecordById("Clients",clientId, "oauthzrecruit");
 		nit = clientResponse.getJSON('NIT');
 		if(isNull(nit))
 		{

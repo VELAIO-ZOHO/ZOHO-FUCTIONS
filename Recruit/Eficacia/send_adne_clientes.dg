@@ -29,14 +29,14 @@ timeExecution = "";
 try 
 {
 	//*****GETING THE ADNeCandidato PARAMS***//
-	ADNeClienteResponse = zoho.recruit.getRecordById("CustomModule2",adneClienteId);
+	ADNeClienteResponse = zoho.recruit.getRecordById("CustomModule2",adneClienteId, "oauthzrecruit");
 	clientIdADNe = ADNeClienteResponse.getJson("Cliente Id");
 	//*****QUERY CANDIDATO WITH EMAIL OR CEDULA PARAMS***//
 	if(!isNull(clientIdADNe))
 	{
 		queryParms = "Id del cliente|=|" + clientIdADNe;
 		columns = "All";
-		clientResponse = zoho.recruit.searchRecords("Clients",queryParms,1,1,columns);
+		clientResponse = zoho.recruit.searchRecords("Clients",queryParms,1,1,columns, "oauthzrecruit");
 		clientId = clientResponse.getJson("CLIENTID");
 		//*****UPDATING ADNeclients***//
 		ADNeClienteResponse.put("Cliente_ID",clientId);
@@ -45,7 +45,7 @@ try
 		{
 			nit = "";
 		}
-		response = zoho.recruit.updateRecord("CustomModule2",adneClienteId,ADNeClienteResponse);
+		response = zoho.recruit.updateRecord("CustomModule2",adneClienteId,ADNeClienteResponse, "oauthzrecruit");
 		//*****ADDRES INFORMATION***//
 		country = clientResponse.getJSON('Pais');
 		if(isNull(country))
@@ -77,7 +77,7 @@ try
 		//GETTING THE STATE CODE 
 		if(!isNull(stateId))
 		{
-			stateResponse = zoho.recruit.getRecordById("CustomModule5",stateId);
+			stateResponse = zoho.recruit.getRecordById("CustomModule5",stateId, "oauthzrecruit");
 			stateCode = stateResponse.getJson("Codigo");
 		}
 		//GETTING THE CITY CODE 
@@ -126,7 +126,7 @@ try
 		mobile = "";
 		if(!isNull(contactId))
 		{
-			contactResponse = zoho.recruit.getRecordById("Contacts",contactId);
+			contactResponse = zoho.recruit.getRecordById("Contacts",contactId, "oauthzrecruit");
 			firtsName = contactResponse.getJSON('First Name');
 			lastName = contactResponse.getJSON('Last Name');
 			listLastName = lastName.toList(" ");

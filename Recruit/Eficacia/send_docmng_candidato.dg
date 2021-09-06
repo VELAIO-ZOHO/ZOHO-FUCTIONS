@@ -23,7 +23,7 @@ try
 	currentDate = today;
 	params = Map();
 	params.put("Tracking",currentDate.toString());
-	zoho.recruit.updateRecord("Candidates",candidateId,params);
+	zoho.recruit.updateRecord("Candidates",candidateId,params,"oauthzrecruit");
 	/*----START: QUERY THE ACCES TOKEN----*/
 	/*START: SEARCHING THE CANDIDATES PROCESSED*/
 	headers = Map();
@@ -111,8 +111,13 @@ try
 		}
 	}
 	/*----END: QUERY THE ACCES TOKEN----*/
+<<<<<<< HEAD
 	jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId, "oauthzrecruit");
 	candidateResponse = zoho.recruit.getRecordById("Candidates",candidateId, "oauthzrecruit");
+=======
+	jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId,"oauthzrecruit");
+	candidateResponse = zoho.recruit.getRecordById("Candidates",candidateId,"oauthzrecruit");
+>>>>>>> dca3e6aef9c2b30c663084f7eb6efb3760c5054c
 	idRequisicion = jobResponse.getJSON("ID de la requisición");
 	candidateDocument = candidateResponse.getJSON("Número de documento");
 	clientId = jobResponse.getJSON('CLIENTID');

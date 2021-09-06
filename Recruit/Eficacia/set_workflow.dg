@@ -10,7 +10,7 @@ sleepResponse = invokeurl
 	url :"https://wsintegracionphp.azurewebsites.net/api/v1/sleep?time=20"
 	type :GET
 ];
-jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId);
+jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId,"oauthzrecruit");
 clientId = jobResponse.getJSON("CLIENTID");
 specificChargeId = jobResponse.getJSON("Cargo especifico_ID");
 clientName = jobResponse.getJSON("Client Name");

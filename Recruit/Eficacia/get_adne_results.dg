@@ -56,7 +56,7 @@ try
 		//If has a job asociate
 		if(!isNull(jobData))
 		{
-			response = zoho.recruit.getRecordById("Candidates",candidateId);
+			response = zoho.recruit.getRecordById("Candidates",candidateId, "oauthzrecruit");
 			email = response.getJSON("Email");
 			if(isNull(email))
 			{
@@ -87,7 +87,7 @@ try
 							candidateSatus = record.getJson('content');
 						}
 					}
-					jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId);
+					jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId, "oauthzrecruit");
 					jobTitle = jobResponse.getJson('Cargo');
 					clientId = jobResponse.getJSON("CLIENTID");
 					/*START: SEARCHING THE CANDIDATES PROCESSED*/
@@ -245,7 +245,7 @@ try
 						candidateSatus = record.getJson('content');
 					}
 				}
-				jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId);
+				jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId, "oauthzrecruit");
 				jobTitle = jobResponse.getJson('Cargo');
 				clientId = jobResponse.getJSON("CLIENTID");
 				/*----VALIDATING THE CANDIDATE STATUS----*/

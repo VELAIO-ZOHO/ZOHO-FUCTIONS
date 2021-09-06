@@ -55,7 +55,7 @@ try
 					}
 				}
 				//GETTING JOB TYPE 
-				asociatedJobs = zoho.recruit.getRecordById("JobOpenings",jobActiveId);
+				asociatedJobs = zoho.recruit.getRecordById("JobOpenings",jobActiveId,"oauthzrecruit");
 				jobType = asociatedJobs.getJSON("Tipo de solicitud");
 				//FILTERING THE ACTIVE JOBS 
 				status = status.toString();
@@ -174,7 +174,7 @@ try
 		edge = yearsDiff(dateBirth,today);
 		paramEdge = Map();
 		paramEdge.put("Edad",edge);
-		edgeResponse = zoho.recruit.updateRecord("Candidates",candidateId,paramEdge);
+		edgeResponse = zoho.recruit.updateRecord("Candidates",candidateId,paramEdge,"oauthzrecruit");
 	}
 	/***END:BIRDTHDAY ***/
 }

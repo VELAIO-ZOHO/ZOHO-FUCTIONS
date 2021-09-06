@@ -52,7 +52,7 @@ params.put("Tiempo laborado",timeWorked1);
 params.put("Tiempo laborado 2",timeWorked2);
 if(!isNull(age) || !isNull(timeWorked2) || !isNull(timeWorked2))
 {
-	edgeResponse = zoho.recruit.updateRecord("Candidates",candidateId,params);
+	edgeResponse = zoho.recruit.updateRecord("Candidates",candidateId,params,"oauthzrecruit");
 	info edgeResponse;
 }
 /***END:UPDATE TIME WORKED ***/
