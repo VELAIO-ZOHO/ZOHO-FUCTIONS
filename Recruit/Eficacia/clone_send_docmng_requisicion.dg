@@ -99,7 +99,7 @@ try
 		}
 	}
 	/*----END: QUERY THE ACCES TOKEN----*/
-	jobResponse = zoho.recruit.getRecordById("JobOpenings",jobOpeningId);
+	jobResponse = zoho.recruit.getRecordById("JobOpenings",jobOpeningId, "oauthzrecruit");
 	companyName = "";
 	requestArea = "¿Requerimiento para un cliente?";
 	jobTitle = "";
@@ -166,7 +166,7 @@ try
 	clientId = jobResponse.getJSON("CLIENTID");
 	if(!isNull(clientId))
 	{
-		clientResponse = zoho.recruit.getRecordById("Clients",clientId);
+		clientResponse = zoho.recruit.getRecordById("Clients",clientId, "oauthzrecruit");
 		nit = clientResponse.getJSON("NIT");
 		if(isNull(nit))
 		{

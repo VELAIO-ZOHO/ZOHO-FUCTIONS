@@ -111,8 +111,8 @@ try
 		}
 	}
 	/*----END: QUERY THE ACCES TOKEN----*/
-	jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId);
-	candidateResponse = zoho.recruit.getRecordById("Candidates",candidateId);
+	jobResponse = zoho.recruit.getRecordById("JobOpenings",jobId, "oauthzrecruit");
+	candidateResponse = zoho.recruit.getRecordById("Candidates",candidateId, "oauthzrecruit");
 	idRequisicion = jobResponse.getJSON("ID de la requisición");
 	candidateDocument = candidateResponse.getJSON("Número de documento");
 	clientId = jobResponse.getJSON('CLIENTID');

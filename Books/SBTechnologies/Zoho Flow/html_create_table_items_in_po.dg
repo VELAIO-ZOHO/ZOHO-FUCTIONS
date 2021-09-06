@@ -1,0 +1,33 @@
+string html_create_table_items_in_po(string purchaseorder_id, string organization_id)
+{
+// create a table HTML template for email
+po_resp = zoho.books.getRecordsByID("purchaseorders","",purchaseorder_id,"zoho_books");
+po = po_resp.get("purchaseorder");
+po_line_items = po.get("line_items");
+// HTML TABLE TEMPLATE
+HTML_table = "<table style='width:100%;border-color:#dddddd;background-color:#fafafa;margin-left:auto;margin-right:auto;'border='1'cellspacing='0'cellpadding='2'>";
+HTML_table_thead = "<thead><tr><th>#</th><th>Name</th><th style='width: 95px;'>Pieces (qty)</th><th style='width: 65px;'>Action</th></tr></thead>";
+HTML_table_tbody = "<tbody>";
+item_number = 1;
+for each  item in po_line_items
+{
+	// values
+	name = item.get("name");
+	id = item.get("item_id");
+	qty = item.get("quantity");
+	// table rows
+	tr = "<tr>";
+	th_no = "<th scope='row'>" + item_number + "</th>";
+	td_name = "<td>" + name + "</td>";
+	td_pieces = "<td style='text-align: center;'>" + qty + "</td>";
+	td_action = "<td style='text-align: center;'><a href='https://books.zoho.com/app#/inventory/items/" + id + "' style='text-decoration: none;'>🔎</a></td>";
+	// merge rows
+	tr = tr + th_no + td_name + td_pieces + td_action + "</tr>";
+	HTML_table_tbody = HTML_table_tbody + tr;
+	item_number = item_number + 1;
+}
+HTML_table_tbody = HTML_table_tbody + "</tbody></table>";
+// MERGE FIELDS
+HTML_table = HTML_table + HTML_table_thead + HTML_table_tbody;
+return HTML_table;
+}

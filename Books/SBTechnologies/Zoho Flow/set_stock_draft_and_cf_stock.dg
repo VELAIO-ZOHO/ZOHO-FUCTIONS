@@ -1,0 +1,63 @@
+void set_stock_draft_and_cf_stock()
+{
+/**
+ * Toma todos los items de la lista [itemsToUpdate] y los busca por Id.
+ * Busca el item en sales order en Draft y suma la cantidad a vender para actualizar campo [Stock in Draft]
+ * También toma el valor del stock actual que tiene el item y copia su valor a los campos custom
+ * [Stock on Hand] [Committed Stock] [Available for sale]
+ * NOTA: [Stock in Draft] por defecto es 0, si es mayor, esta cantidad es restada del Available for Sale
+ */
+organizationID = "715648898";
+itemsToUpdate = {2268646000012454219,2268646000011255173,2268646000013173463};
+itemsUpdatedSuccess = 0;
+try 
+{
+	for each  recordId in itemsToUpdate
+	{
+		itemById = zoho.books.getRecordsByID("items",organizationID,recordId,"zoho_books").get("item");
+		itemName = itemById.get("name");
+		stockOnHand = itemById.get("actual_available_stock");
+		availableCommStock = itemById.get("actual_committed_stock");
+		availableSaleStock = itemById.get("actual_available_for_sale_stock");
+		quantitysInAllDrafts = 0;
+		salesorder_associated = Collection();
+		salesOrdersDrafts = zoho.books.getRecords("salesorders",organizationID,{"status":"draft"},"zoho_books").get("salesorders");
+		for each  saleOrderDraftResume in salesOrdersDrafts
+		{
+			saleOrderId = saleOrderDraftResume.get("salesorder_id");
+			saleOrderDraftById = zoho.books.getRecordsByID("salesorders",organizationID,saleOrderId,"zoho_books").get("salesorder");
+			itemsInDraft = saleOrderDraftById.get("line_items");
+			// Recorremos todos los items de los SO - Draft
+			for each  item_2 in itemsInDraft
+			{
+				itemId_2 = item_2.get("item_id");
+				itemQuantity_2 = item_2.get("quantity");
+				// si contiene el mismo item del SO entrante suma la cant. al total
+				if(itemId_2 == recordId)
+				{
+					salesorder_associated.insert(saleOrderId);
+					quantitysInAllDrafts = quantitysInAllDrafts + itemQuantity_2;
+				}
+			}
+		}
+		// actualiza el campo Stock in Draft del item
+		update = {"custom_fields":{{"label":"Stock in Draft","value":quantitysInAllDrafts},{"label":"Stock on Hand","value":stockOnHand},{"label":"Committed Stock","value":availableCommStock},{"label":"Available for Sale","value":availableSaleStock - quantitysInAllDrafts}}};
+		item_updated = zoho.books.updateRecord("items",organizationID,recordId,update,"zoho_books");
+		// Log
+		log = {"item_found":itemName + " with ID " + recordId,"amounts_in_draft_so":quantitysInAllDrafts,"associated_draft_so":salesorder_associated,"values_updted":update};
+		info log;
+		info item_updated.get("message");
+		if(itemsToUpdate.size() > 1)
+		{
+			info "_______________________Next item_______________________";
+		}
+		itemsUpdatedSuccess = itemsUpdatedSuccess + 1;
+	}
+	info "Total items updated: " + itemsUpdatedSuccess;
+	info "End of execution";
+}
+ catch (e)
+{	info "!Error el ejecutar la función¡";
+	info e.toString();
+}
+}

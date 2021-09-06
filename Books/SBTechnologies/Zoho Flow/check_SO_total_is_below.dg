@@ -1,0 +1,12 @@
+bool check_SO_total_is_below(int salesorder_total, int value_to_compare)
+{
+	/*
+	 * this function compare the sales order total value with the [value_to_compare] parameter
+	 * if the total is below return false
+	 */
+	if(salesorder_total < value_to_compare)
+	{
+		return true;
+	}
+	return false;
+}

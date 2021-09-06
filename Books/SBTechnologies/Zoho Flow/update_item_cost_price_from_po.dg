@@ -1,0 +1,37 @@
+list update_item_cost_price_from_po(string purchaseorder_id, string organization_id)
+{
+/**
+ * Get the rate of items associed in Purchase Order and update this value in item field "Cost price"
+ * Made by: Brayan Devia M.
+ * Contact: velaio.com
+ * 
+ * @param purchaseorder_id 
+ * @param organization_id 
+ */
+line_items = List();
+info "Purchase order entry: " + purchaseorder_id;
+purchaseorder = zoho.books.getRecordsByID("purchaseorders",organization_id,purchaseorder_id,"zoho_books");
+line_items = purchaseorder.get("purchaseorder").get("line_items");
+info "Items found in Purchase Order " + line_items.size();
+info "--------------------------------";
+for each  item in line_items
+{
+	item_id = item.get("item_id");
+	item_name = item.get("name");
+	item_rate = item.get("rate");
+	// message
+	info "Item " + item_name + " with ID " + item_id + " found!";
+	info "The rate of this item is " + item_rate;
+	// end message
+	// update = {"custom_fields":{{"label":"Last price used in PO","value":item_rate}}};
+	update = {"purchase_rate":item_rate};
+	update_item_resp = zoho.books.updateRecord("items",organization_id,item_id,update,"zoho_books");
+	info update_item_resp.get("message");
+	if(line_items.size() > 1)
+	{
+		info "------------------ Next item --------------------";
+	}
+}
+info "End of execution";
+return line_items;
+}

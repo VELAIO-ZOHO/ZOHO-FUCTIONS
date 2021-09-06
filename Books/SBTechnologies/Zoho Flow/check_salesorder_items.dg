@@ -1,0 +1,95 @@
+string check_salesorder_items(string salesorder_id, string organization_id)
+{
+// this function evaluates the items in the Sales Order.
+// check #1: If any item have rate in SO below of his real selling rate.
+// check #2: If any item don't have available stock.
+// check #3: If any item have country restriction values (can't sell country).
+// POSSIBLE RESPONSES: OK || ERROR_ITEMS_RATE || ERROR_STOCK_AVAILABLE || ERROR_COUNTRY_RESTRICTION
+salesorder_check = "OK";
+// salesorder vars
+salesorder = zoho.books.getRecordsByID("salesorders",organization_id,salesorder_id,"zoho_books").get("salesorder");
+salesorder_number = salesorder.get("salesorder_number");
+salesorder_total = salesorder.get("total");
+so_line_items = salesorder.get("line_items");
+so_shipping_country = salesorder.get("shipping_address").get("country");
+// log
+info "Sales Order [" + salesorder_number + "] finded!";
+info "Have " + so_line_items.size() + " items";
+// end log
+for each  line_item in so_line_items
+{
+	// item vars
+	item_id = line_item.get("item_id");
+	item_name = line_item.get("name");
+	item_qty = line_item.get("quantity");
+	item_rate = line_item.get("rate");
+	item_resp = zoho.books.getRecordsByID("items",organization_id,item_id,"zoho_books").get("item");
+	real_item_rate = item_resp.get("rate");
+	item_av_for_sale = item_resp.get("actual_available_for_sale_stock");
+	item_custom_fields = item_resp.get("custom_fields");
+	item_country_restrictions = {};
+	item_stock_in_draft = 0;
+	for each  custom_field in item_custom_fields
+	{
+		if(custom_field.get("label") == "Stock in Draft")
+		{
+			item_stock_in_draft = custom_field.get("value");
+		}
+		if(custom_field.get("label") == "Sales Country Restriction")
+		{
+			item_country_restrictions = custom_field.get("value");
+		}
+	}
+	// =============================================== Checking item price ===============================================
+	log_map = {"item rate in SO":item_rate,"real item rate":real_item_rate};
+	if(item_rate < real_item_rate)
+	{
+		// Returned false if found any item
+		salesorder_check = "ERROR_ITEMS_RATE";
+		log_map.put("is item rate below","true ❌");
+	}
+	else
+	{
+		log_map.put("is item rate below",false);
+	}
+	// log
+	info "Item [" + item_name + "] with ID " + item_id + " found!";
+	info "Checking item price";
+	info log_map;
+	// end log
+	// =========================================== Checking item stock available ===========================================
+	info "Checking item stock available [Available for Sale - Stock in Draft]";
+	available_stock = item_av_for_sale - item_stock_in_draft;
+	log_map = {"Available for Sale":item_av_for_sale,"Stock in Draft":item_stock_in_draft,"Total Available":available_stock};
+	if(available_stock <= 0)
+	{
+		salesorder_check = "ERROR_STOCK_AVAILABLE";
+		log_map.put("Available stock for item is below or equals to cero","true ❌");
+	}
+	else
+	{
+		log_map.put("Available stock for item is below or equals to cero",false);
+	}
+	info log_map;
+	// ========================================== Checking item country restriction =========================================
+	info "Checking item country restrictions";
+	log_map = {"Shipping country":so_shipping_country,"Items restrictions":item_country_restrictions};
+	if(item_country_restrictions.contains(so_shipping_country))
+	{
+		salesorder_check = "ERROR_COUNTRY_RESTRICTION";
+		log_map.put("item have country restrictions","true ❌");
+	}
+	else
+	{
+		log_map.put("item have country restrictions",false);
+	}
+	info log_map;
+	if(so_line_items.size() > 1)
+	{
+		info "---------------------------- Next item ----------------------------";
+	}
+}
+info "------------------------- Items finished -------------------------";
+info "End of execution!";
+return salesorder_check;
+}

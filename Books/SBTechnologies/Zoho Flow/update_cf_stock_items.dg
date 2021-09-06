@@ -1,0 +1,76 @@
+void update_cf_stock_items(list line_items, string organization_id)
+{
+/**
+ * Recorre los items relacionados del Sale Order entrante (en adelante: SO).
+ * Para cada item relaciondo, realiza una búsqueda de todos los SO en estado 'draft'
+ * Recorre todos los SO - Draft, si encuentra que el item relacionado también se encuentra en otros
+ * realiza una sumatoria de todos y los guarda en la variable 'qtys_in_all_so_drafts'.
+ * 
+ * Una vez terminado el recorrido de todos los SO - Draft actualiza el campo 'Stock in Draft' del item.
+ * Al actualizar este item, obtenemos de regreso el valor actualizado del 'Available for Sale' & 'Committed Stock'
+ * y estos valores los copiamos al los campos custom con los mismos nombres.
+ *
+ * Desarrollado por: velaio.com
+ */
+items_updated = 0;
+api_calls = 0;
+if(line_items.size() > 0)
+{
+	info "Items found in list " + line_items.size();
+	// Búsqueda del SO entrante (ByID nos trae todos los datos)
+	for each  item in line_items
+	{
+		item_id = item.get("item_id");
+		item_by_id = zoho.books.getRecordsByID("items",organization_id,item_id,"zoho_books").get("item");
+		api_calls = api_calls + 1;
+		name = item_by_id.get("name");
+		// message
+		info "Item " + name + " with ID " + item_id + " found!";
+		// stock values
+		actual_available_stock = item_by_id.get("actual_available_stock");
+		actual_committed_stock = item_by_id.get("actual_committed_stock");
+		actual_av_for_sale_stock = item_by_id.get("actual_available_for_sale_stock");
+		stock_in_draft = 0;
+		// when an item have not stock, the value in stock has null
+		if(actual_available_stock == null)
+		{
+			actual_available_stock = 0;
+		}
+		if(actual_committed_stock == null)
+		{
+			actual_committed_stock = 0;
+		}
+		if(actual_av_for_sale_stock == null)
+		{
+			actual_av_for_sale_stock = 0;
+		}
+		custom_fields = item_by_id.get("custom_fields");
+		// get and update stock_in_draft value
+		for each  custom_field in custom_fields
+		{
+			if(custom_field.get("label") == "Stock in Draft")
+			{
+				stock_in_draft = custom_field.get("value");
+			}
+		}
+		info "actual_av_for_sale_stock: " + actual_av_for_sale_stock;
+		info "stock_in_draft: " + stock_in_draft;
+		update = {"custom_fields":{{"label":"Stock on Hand","value":actual_available_stock},{"label":"Committed Stock","value":actual_committed_stock},{"label":"Available for Sale","value":actual_av_for_sale_stock - stock_in_draft}}};
+		// message log
+		info {"values to update":update,"Stock in Draft":stock_in_draft};
+		item_updated = zoho.books.updateRecord("items",organization_id,item_id,update,"zoho_books");
+		api_calls = api_calls + 1;
+		info item_updated.get("message");
+		if(line_items.size() > 1)
+		{
+			info "-------------------- Next item --------------------";
+		}
+	}
+	info "End of execution";
+	info "API CALLS: " + api_calls;
+}
+else
+{
+	info "No items have been received";
+}
+}

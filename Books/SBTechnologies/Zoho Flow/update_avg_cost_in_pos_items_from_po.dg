@@ -1,0 +1,63 @@
+void update_avg_cost_in_pos_items_from_po(list line_items, string organization_id)
+{
+/**
+ * Recorre los items relacionados del Purchase Order entrante (en adelante: PO).
+ * Para cada item relaciondo, obtiene el [rate] y calcula el avg con el valor obtenido
+ * del campo en el item [AVG Cost Price in POs]
+ *
+ * @param line_items: List with the items associated to PO
+ * @param organization_id
+ *
+ * Desarrollado por: velaio.com
+ */
+items_updated = 0;
+if(line_items.size() > 0)
+{
+	info "Items found in list " + line_items.size();
+	// Búsqueda del SO entrante (ByID nos trae todos los datos)
+	for each  item in line_items
+	{
+		po_item_id = item.get("item_id");
+		po_item_rate = item.get("rate");
+		po_name = item.get("name");
+		info "Item " + po_name + " with ID " + po_item_id + " found!";
+		// get [AVG Cost Price in POs] of item
+		item_by_id = zoho.books.getRecordsByID("items",organization_id,po_item_id,"zoho_books").get("item");
+		item_avg_rate = 0;
+		new_item_avg_rate_po = 0;
+		custom_fields = item_by_id.get("custom_fields");
+		// get and update stock_in_draft value
+		for each  custom_field in custom_fields
+		{
+			if(custom_field.get("label") == "AVG Cost Price in POs")
+			{
+				item_avg_rate = custom_field.get("value");
+			}
+		}
+		// calculate average
+		if(item_avg_rate > 0)
+		{
+			new_item_avg_rate_po = (item_avg_rate + po_item_rate) / 2;
+		}
+		else
+		{
+			new_item_avg_rate_po = po_item_rate;
+		}
+		// update
+		update = {"custom_fields":{{"label":"AVG Cost Price in POs","value":new_item_avg_rate_po}}};
+		// message log
+		info {"rate_in_po":po_item_rate,"item_avg_rate":item_avg_rate,"values to update":update};
+		item_updated = zoho.books.updateRecord("items",organization_id,po_item_id,update,"zoho_books");
+		info item_updated.get("message");
+		if(line_items.size() > 1)
+		{
+			info "-------------------- Next item --------------------";
+		}
+	}
+	info "End of execution";
+}
+else
+{
+	info "No items have been received";
+}
+}

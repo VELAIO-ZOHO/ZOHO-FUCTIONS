@@ -1,0 +1,39 @@
+void update_item_last_price_po_from_so(string salesorder_id, string organization_id)
+{
+/**
+	 * Get the rate of items associed in Sales Order and update this value in item field "Last price used in SO"
+	 * Made by: Brayan Devia M.
+	 * Contact: velaio.com
+	 * 
+	 * @param salesorder_id 
+	 */
+try 
+{
+	salesorder = zoho.books.getRecordsByID("salesorders",organization_id,salesorder_id,"zoho_books").get("salesorder");
+	items = salesorder.get("line_items");
+	info "Items found in Sales Order " + items.size();
+	info "--------------------------------";
+	for each  item in items
+	{
+		item_id = item.get("item_id");
+		item_name = item.get("name");
+		item_rate = item.get("rate");
+		// message
+		info "Item " + item_name + " with ID " + item_id + " found!";
+		info "The rate of this item is " + item_rate;
+		// end message
+		update = {"custom_fields":{{"label":"Last price used in SO","value":item_rate}}};
+		update_item_resp = zoho.books.updateRecord("items",organization_id,item_id,update,"zoho_books");
+		info update_item_resp.get("message");
+		if(items.size() > 1)
+		{
+			info "------------------ Next item --------------------";
+		}
+	}
+	info "End of execution";
+}
+ catch (e)
+{	info "¡Catch: Error executing function!";
+	info e.toString();
+}
+}

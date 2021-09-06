@@ -1,0 +1,23 @@
+list itemID_to_list(string item_id)
+{
+// Función que toma el ID de un item (string) y lo retorna dentro de una lista {"item_id":2268646000012632318}
+list = List();
+//===============================================================
+// FOR MANUAL LIST EXECUTION
+//===============================================================
+exetute_manually = true;
+if(exetute_manually)
+{
+	predefined_items_list = {2268646000012632318,2268646000012632073,2268646000011951155};
+	for each  pre_item_id in predefined_items_list
+	{
+		list.add({"item_id":pre_item_id});
+	}
+}
+//===============================================================
+else
+{
+	list.add({"item_id":item_id});
+}
+return list;
+}

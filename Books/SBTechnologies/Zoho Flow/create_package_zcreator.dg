@@ -1,0 +1,36 @@
+void create_package_zcreator(string creator_so_id, string package_id, string org_id)
+{
+// ZOHO INVENTORY =====================================================================================
+package = zoho.inventory.getRecordsByID("packages",org_id,package_id).get("package");
+package_id = package.get("package_id");
+package_so_id = package.get("salesorder_id");
+package_number = package.get("package_number");
+package_items = package.get("line_items");
+// ZOHO CREATOR =====================================================================================
+app_owner = "sbtechnology16";
+app_name = "sales-orders-packages";
+form = "Boxes";
+package_to_subform = List();
+// items in subform
+for each  package_item in package_items
+{
+	item_id = package_item.get("item_id");
+	item_name = package_item.get("name");
+	item_qty = package_item.get("quantity");
+	package_to_subform.add({"item_name":item_name,"item_qty":item_qty});
+}
+// url field
+dataUrl = Map();
+dataUrl.put("value","https://inventory.zoho.com/app#/salesorders/" + package_so_id + "/packages/" + package_id);
+dataUrl.put("url","https://inventory.zoho.com/app#/salesorders/" + package_so_id + "/packages/" + package_id);
+// data to create
+data = Map();
+data.put("inv_box_id",package_id);
+data.put("box_number",package_number);
+data.put("inv_box_url",dataUrl);
+data.put("salesorder_associated",creator_so_id);
+data.put("items_box",package_to_subform);
+// creatin response
+resp = zoho.creator.createRecord(app_owner,app_name,form,data,Map(),"zcreator_cnn");
+info resp;
+}
