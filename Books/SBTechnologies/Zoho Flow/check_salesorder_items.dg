@@ -1,13 +1,23 @@
-string check_salesorder_items(string salesorder_id, string organization_id)
+string check_salesorder_items(string salesorder_id, string organization_id, list pending_list_items)
 {
-// this function evaluates the items in the Sales Order.
-// check #1: If any item have rate in SO below of his real selling rate.
-// check #2: If any item don't have available stock.
-// check #3: If any item have country restriction values (can't sell country).
-// POSSIBLE RESPONSES: OK || ERROR_ITEMS_RATE || ERROR_STOCK_AVAILABLE || ERROR_COUNTRY_RESTRICTION
+/**
+ * This function evaluates the items in the Sales Order.
+ * check #1: If any item have rate in SO below of his real selling rate.
+ * check #2: If any item don't have available stock.
+ * check #3: If any item have country restriction values (can't sell country).
+ * 
+ * Possible responses: OK || ERROR_ITEMS_RATE || ERROR_STOCK_AVAILABLE || ERROR_COUNTRY_RESTRICTION
+ * 
+ * @param salesorder_id 
+ * @param organization_id 
+ * @param pending_list_items list with the previously evaluated pending stock
+ * 
+ */
 salesorder_check = "OK";
+api_calls = 0;
 // salesorder vars
 salesorder = zoho.books.getRecordsByID("salesorders",organization_id,salesorder_id,"zoho_books").get("salesorder");
+api_calls = api_calls + 1;
 salesorder_number = salesorder.get("salesorder_number");
 salesorder_total = salesorder.get("total");
 so_line_items = salesorder.get("line_items");
@@ -24,6 +34,7 @@ for each  line_item in so_line_items
 	item_qty = line_item.get("quantity");
 	item_rate = line_item.get("rate");
 	item_resp = zoho.books.getRecordsByID("items",organization_id,item_id,"zoho_books").get("item");
+	api_calls = api_calls + 1;
 	real_item_rate = item_resp.get("rate");
 	item_av_for_sale = item_resp.get("actual_available_for_sale_stock");
 	item_custom_fields = item_resp.get("custom_fields");
@@ -58,17 +69,27 @@ for each  line_item in so_line_items
 	info log_map;
 	// end log
 	// =========================================== Checking item stock available ===========================================
-	info "Checking item stock available [Available for Sale - Stock in Draft]";
-	available_stock = item_av_for_sale - item_stock_in_draft;
-	log_map = {"Available for Sale":item_av_for_sale,"Stock in Draft":item_stock_in_draft,"Total Available":available_stock};
-	if(available_stock <= 0)
+	info "Checking item stock available [Available for Sale - Pending Stock - Qty to sell]";
+	// recorring previous calculated pendinst stock in params
+	item_pending_stock = 0;
+	for each  pending_item in pending_list_items
+	{
+		pending_item_id = pending_item.get("item_id");
+		if(pending_item_id == item_id)
+		{
+			item_pending_stock = pending_item.get("pending_stock");
+		}
+	}
+	available_stock = item_av_for_sale - item_pending_stock - item_qty;
+	log_map = {"Available for Sale":item_av_for_sale,"Pending Stock":item_pending_stock,"Qty to sell":item_qty,"Diference":available_stock};
+	if(available_stock < 0)
 	{
 		salesorder_check = "ERROR_STOCK_AVAILABLE";
-		log_map.put("Available stock for item is below or equals to cero","true ❌");
+		log_map.put("Available stock for item is below to cero","true ❌");
 	}
 	else
 	{
-		log_map.put("Available stock for item is below or equals to cero",false);
+		log_map.put("Available stock for item is below to cero",false);
 	}
 	info log_map;
 	// ========================================== Checking item country restriction =========================================
@@ -91,5 +112,6 @@ for each  line_item in so_line_items
 }
 info "------------------------- Items finished -------------------------";
 info "End of execution!";
+info "API CALLS: " + api_calls;
 return salesorder_check;
 }

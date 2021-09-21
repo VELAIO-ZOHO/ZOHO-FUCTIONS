@@ -1,73 +1,82 @@
-list update_stock_in_draft_items_from_so(string salesorder_id, string organization_id)
+void update_cf_stock_items(list line_items, string organization_id)
 {
 /**
  * Recorre los items relacionados del Sale Order entrante (en adelante: SO).
- * Para cada item relaciondo, realiza una búsqueda de todos los SO en estado "draft"
+ * Para cada item relaciondo, realiza una búsqueda de todos los SO en estado 'draft'
  * Recorre todos los SO - Draft, si encuentra que el item relacionado también se encuentra en otros
- * realiza una sumatoria de todos y los guarda en la variable "qtys_in_all_so_drafts".
+ * realiza una sumatoria de todos y los guarda en la variable 'qtys_in_all_so_drafts'.
  * 
- * Una vez terminado el recorrido de todos los SO - Draft actualiza el campo "Stock in Draft" del item.
- * Al actualizar este item, obtenemos de regreso el valor actualizado del "Available for Sale" & "Committed Stock"
+ * Una vez terminado el recorrido de todos los SO - Draft actualiza el campo 'Stock in Draft' del item.
+ * Al actualizar este item, obtenemos de regreso el valor actualizado del 'Available for Sale' & 'Committed Stock'
  * y estos valores los copiamos al los campos custom con los mismos nombres.
  *
  * Desarrollado por: velaio.com
  */
+items_updated = 0;
 api_calls = 0;
-initial_so_items = List();
-// Búsqueda del SO entrante (ByID nos trae todos los datos)
-initial_salesorder = zoho.books.getRecordsByID("salesorders",organization_id,salesorder_id,"zoho_books").get("salesorder");
-info initial_salesorder;
-api_calls = api_calls + 1;
-initial_so_items = initial_salesorder.get("line_items");
-initial_so_number = initial_salesorder.get("salesorder_number");
-// Recorremos los items del SO entrante
-info "Items found in Sales Order [" + initial_so_number + "]: " + initial_so_items.size();
-info "--------------------------------";
-for each  item in initial_so_items
+if(line_items.size() > 0)
 {
-	salesorder_associated = Collection();
-	qtys_in_all_so_drafts = 0;
-	initial_item_id = item.get("item_id");
-	initial_item_name = item.get("name");
-	initial_item_qty = item.get("quantity");
-	info "Item " + initial_item_name + " with ID " + initial_item_id + " found!";
-	// Búsqueda de todos los SO - Draft
-	searched_draft_so = zoho.books.getRecords("salesorders",organization_id,{"status":"draft"},"zoho_books").get("salesorders");
-	api_calls = api_calls + 1;
-	// Recorremos todos los SO - Draft
-	for each  searched_so in searched_draft_so
+	info "Items found in list " + line_items.size();
+	// Búsqueda del SO entrante (ByID nos trae todos los datos)
+	for each  item in line_items
 	{
-		searched_so_id = searched_so.get("salesorder_id");
-		searched_so_by_id = zoho.books.getRecordsByID("salesorders",organization_id,searched_so_id,"zoho_books").get("salesorder");
+		item_id = item.get("item_id");
+		item_by_id = zoho.books.getRecordsByID("items",organization_id,item_id,"zoho_books").get("item");
 		api_calls = api_calls + 1;
-		searched_so_items = searched_so_by_id.get("line_items");
-		// Recorremos todos los items de los SO - Draft
-		for each  searched_so_item in searched_so_items
+		name = item_by_id.get("name");
+		// message
+		info "Item " + name + " with ID " + item_id + " found!";
+		// stock values
+		actual_available_stock = item_by_id.get("actual_available_stock");
+		actual_committed_stock = item_by_id.get("actual_committed_stock");
+		actual_av_for_sale_stock = item_by_id.get("actual_available_for_sale_stock");
+		stock_in_draft = 0;
+		pending_stock = 0;
+		// when an item have not stock, the value in stock has null
+		if(actual_available_stock == null)
 		{
-			searched_item_id = searched_so_item.get("item_id");
-			searched_item_qty = searched_so_item.get("quantity");
-			// si contiene el mismo item del SO entrante suma la cant. al total
-			if(searched_item_id == initial_item_id)
+			actual_available_stock = 0;
+		}
+		if(actual_committed_stock == null)
+		{
+			actual_committed_stock = 0;
+		}
+		if(actual_av_for_sale_stock == null)
+		{
+			actual_av_for_sale_stock = 0;
+		}
+		custom_fields = item_by_id.get("custom_fields");
+		// get and update stock_in_draft value
+		for each  custom_field in custom_fields
+		{
+			if(custom_field.get("label") == "Stock in Draft")
 			{
-				salesorder_associated.insert(searched_so_id);
-				qtys_in_all_so_drafts = qtys_in_all_so_drafts + searched_item_qty;
+				stock_in_draft = custom_field.get("value");
+			}
+			if(custom_field.get("label") == "Pending Stock")
+			{
+				pending_stock = custom_field.get("value");
 			}
 		}
+		info "actual_av_for_sale_stock: " + actual_av_for_sale_stock;
+		info "stock_in_draft: " + stock_in_draft;
+		info "pending_stock: " + pending_stock;
+		update = {"custom_fields":{{"label":"Stock on Hand","value":actual_available_stock},{"label":"Committed Stock","value":actual_committed_stock},{"label":"Available for Sale","value":actual_av_for_sale_stock - stock_in_draft - pending_stock}}};
+		// message log
+		info {"values to update":update};
+		item_updated = zoho.books.updateRecord("items",organization_id,item_id,update,"zoho_books");
+		api_calls = api_calls + 1;
+		info item_updated.get("message");
+		if(line_items.size() > 1)
+		{
+			info "-------------------- Next item --------------------";
+		}
 	}
-	// actualiza el campo Stock in Draft del item
-	update = {"custom_fields":{{"label":"Stock in Draft","value":qtys_in_all_so_drafts}}};
-	item_updated = zoho.books.updateRecord("items",organization_id,initial_item_id,update,"zoho_books");
-	api_calls = api_calls + 1;
-	// Log
-	info "Amounts of this item in Draft SO: " + qtys_in_all_so_drafts;
-	info {"Associated Draft Sales Orders":salesorder_associated};
-	info item_updated.get("message");
-	if(initial_so_items.size() > 1)
-	{
-		info "------------------ Next item --------------------";
-	}
+	info "End of execution";
+	info "API CALLS: " + api_calls;
 }
-info "End of execution!";
-info "API CALLS: " + api_calls;
-return initial_so_items;
+else
+{
+	info "No items have been received";
+}
 }
