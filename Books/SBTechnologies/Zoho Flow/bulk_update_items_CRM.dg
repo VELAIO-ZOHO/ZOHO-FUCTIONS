@@ -1,0 +1,117 @@
+void bulk_update_items_CRM(list line_items, string organization_id)
+{
+/**
+ * This function updates with bulk update all the items that are modified validating if the ID-CRM field 	is null if it is null it updates this field consulting in Zoho CRM.
+ * Made by: Jhoan Montenegro.
+ * Contact: velaio.com
+ * 
+ * @param line_items 
+ * @param organization_id 
+*/
+record_map = list();
+list_update = list();
+api_calls = 0;
+info "Items found: " + line_items.size();
+for each  line_item in line_items
+{
+	id_CRM = "";
+	item_id = line_item.get("item_id");
+	item_books = zoho.books.getRecordsByID("items",organization_id,item_id,"zoho_books").get("item");
+	api_calls = api_calls + 1;
+	item_id_books = item_books.get("item_id");
+	custom_fields = item_books.get("custom_fields");
+	name = item_books.get("name");
+	description = item_books.get("description");
+	description_purchase = item_books.get("purchase_description");
+	sales_rate = item_books.get("sales_rate");
+	qty_in_stock = item_books.get("stock_on_hand");
+	info "item_id_books:" + item_id_books + " Name: " + name;
+	for each  custom_field in custom_fields
+	{
+		custom_field_value = custom_field.get("value");
+		label = custom_field.get("label");
+		if(label == "ID-CRM")
+		{
+			id_CRM = custom_field_value;
+		}
+		if(label == "Stock on Hand")
+		{
+			stock_on_hand = custom_field_value;
+		}
+		if(label == "Committed Stock")
+		{
+			committed_stock = custom_field_value;
+		}
+		if(label == "Stock in Draft")
+		{
+			stock_in_draft = custom_field_value;
+		}
+		if(label == "Available for Sale")
+		{
+			available_for_sale = custom_field_value;
+		}
+		if(label == "Pending Stock")
+		{
+			pending_stock = custom_field_value;
+		}
+	}
+	if(id_CRM == "")
+	{
+		info "this item doesn't have ID for CRM";
+		for each  custom_field in custom_fields
+		{
+			label = custom_field.get("label");
+			value_custom_field = custom_field.get("value");
+			if(label == "ID-SKU")
+			{
+				dataSKU_searchCRM = "(ID_SKU:equals:" + value_custom_field + ")";
+				items_CRM = zoho.crm.searchRecords("Products",dataSKU_searchCRM);
+				api_calls = api_calls + 1;
+				count_item_CRM = items_CRM.size();
+				if(count_item_CRM == 0)
+				{
+					info "This item doesn´t exist in Zoho CRM (not updated)";
+				}
+				else
+				{
+					id_CRM = items_CRM.get(0).get("id");
+					update = {"custom_fields":{{"label":"ID-CRM","value":id_CRM}}};
+					item_updated = zoho.books.updateRecord("items",organization_id,item_id_books,update,"zoho_books");
+					api_calls = api_calls + 1;
+					info "ID for CRM assigned: " + id_CRM;
+				}
+			}
+		}
+	}
+	if(id_CRM != "")
+	{
+		record_map = {
+      "id":id_CRM,
+      "Product_Name":name,
+      "Description":description,
+      "Purchase_Description":description_purchase,
+      "Stock_on_Hand":stock_on_hand,
+      "Stock_in_Draft1":stock_in_draft,
+      "Committed_Stock1":committed_stock,
+      "Available_for_Sale":available_for_sale,
+      "Sales_Price":sales_rate,
+      "Pending_Stock":pending_stock,
+      "Qty_in_Stock":qty_in_stock
+    };
+		list_update.add(record_map);
+		if(line_items.size() > 1)
+		{
+			info "-------------------------NEXT ITEM-----------------------";
+		}
+		item_info = zoho.crm.bulkUpdate("Products",list_update);
+		api_calls = api_calls + 1;
+		info "UPDATE " + item_info.get(0).get("code");
+		info "Total api calls: " + api_calls;
+		info "-------------------------END EXECUTION-----------------------";
+	}
+	else
+	{
+		info "-------------------------END EXECUTION-----------------------";
+	}
+}
+}

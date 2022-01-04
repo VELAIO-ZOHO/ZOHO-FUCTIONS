@@ -1,0 +1,15 @@
+salesorderID = salesorder.get("salesorder_id");
+organizationID = organization.get("organization_id");
+salesorder = zoho.books.getRecordsByID("salesorders", organizationID, salesorderID, "zbooks_cnn").get("salesorder");
+salesorder_payment_value = salesorder.get("payment_terms_label");
+// =====================
+customerID = salesorder.get("customer_id");
+customer = zoho.books.getRecordsByID("contacts", organizationID, customerID, "zbooks_cnn").get("contact");
+customer_payment_value = customer.get("payment_terms_label");
+if ( salesorder_payment_value != customer_payment_value ) 
+{
+	info "SO PT: " + salesorder_payment_value;
+	info "Customer PT: " + customer_payment_value;
+	info "El PT en la SO es diferente al del Customer, actualizar!" ;
+	resp = zoho.books.updateRecord("salesorders", organizationID, salesorderID, {"payment_terms_label":customer_payment_value}, "zbooks_cnn");
+}
