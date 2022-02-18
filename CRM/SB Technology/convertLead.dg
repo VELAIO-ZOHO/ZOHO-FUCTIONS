@@ -1,0 +1,40 @@
+/**
+ * Description: this function convert a lead with multiple Contacs
+ * Created By: David Gomez - Velaio
+ * Created at: 18/02/2022
+ 
+ */
+lead = zoho.crm.getRecordById("Leads",id,Map(),"zcrm");
+customerData = {"CP_City":lead.get("CP_City"),"Contact_Last_Name":lead.get("Contact_Last_Name"),"BC_Postal_Zip_Code":lead.get("BC_Postal_Zip_Code"),"Business_of_selling":lead.get("Business_of_selling"),"Additional_Contact_Telephone":lead.get("Additional_Contact_Telephone"),"BA_First_Name":lead.get("Accountant_First_Name"),"BA_Last_Name":lead.get("BA_Last_Name"),"Firm_Name":lead.get("Firm_Name"),"Currency":lead.get("Currency"),"CP_Postal_Zip_Code":lead.get("CP_Postal_Zip_Code"),"Street":lead.get("Street"),"SP_First_Name":lead.get("Shipping_Contact_name"),"Person_1_Telephone":lead.get("Person_1_Telephone"),"Additional_Contact_Email":lead.get("Additional_Contact_Email"),"LM_First_Name":lead.get("Logistic_Manager_First_Name"),"EIN":lead.get("EIN"),"BC_Street_Address":lead.get("Billing_Address"),"RI_Postal_Zip_Code":lead.get("RI_Postal_Zip_Code"),"No_of_Employees":lead.get("No_of_Employees"),"Printed_name":lead.get("Printed_name"),"Person_2_Last_Name":lead.get("Person_2_Last_Name"),"Company_email_address":lead.get("Company_email_address"),"Billing_Phone":lead.get("Billing_Contact_Telephone"),"AC_Last_Name":lead.get("AC_Last_Name"),"Contact_Email":lead.get("Contact_Email"),"R_Name":lead.get("R_Name"),"RI_City":lead.get("RI_City"),"Country":lead.get("Country"),"Annual_Revenue":lead.get("Annual_Revenue"),"RI_State_Region_Province":lead.get("RI_State_Region_Province"),"SP_State_Region_Province":lead.get("SP_State_Region_Province"),"Would_you_like_to_receive_email_notifications":lead.get("Would_you_like_to_receive_email_notifications"),"Person_1_First_Name":lead.get("Person_1"),"CP_State_Region_Province":lead.get("CP_State_Region_Province"),"E_commerce_type":lead.get("E_commerce_type"),"Website":lead.get("Website"),"Record_Image":lead.get("Record_Image"),"Date_established":lead.get("Date_established"),"Distributor_type":lead.get("Distributor_type"),"Account_Name":lead.get("Company"),"Logistic_Manager_Telephone":lead.get("Logistic_Manager_Telephone"),"BC_Last_Name":lead.get("BC_Last_Name"),"Person_2_First_Name":lead.get("Person_2"),"Bank_Name":lead.get("Bank_Name"),"Account_Number1":lead.get("Account_number"),"LM_Last_Name":lead.get("LM_Last_Name"),"SP_Last_Name":lead.get("SP_Last_Name"),"DBA":lead.get("DBA"),"Email":lead.get("Email"),"SP_Country":lead.get("SP_Country"),"Account_Type":lead.get("Business_type"),"RI_Country":lead.get("RI_Country"),"Industry":lead.get("Industry"),"Zip_Code":lead.get("Zip_Code"),"Logistic_Manager_Email":lead.get("Logistic_Manager_Email"),"Customer_Source":lead.get("Lead_Source"),"RI_Street_Address":lead.get("Location_of_Business"),"R_Title":lead.get("R_Title"),"City":lead.get("City"),"SP_City":lead.get("SP_City"),"Contact_First_Name":lead.get("Contact_name"),"Contact_Telephone":lead.get("Contact_Telephone"),"State":lead.get("State"),"Shipping_Contact_Email":lead.get("Shipping_Contact_Email"),"CP_Street_Address":lead.get("Business_address"),"Business_Owner_First_Name":lead.get("First_Name"),"How_do_you_hear_from_SB_Technology":lead.get("How_do_you_hear_from_SB_Technology"),"Business_Owner_Last_Name":lead.get("Last_Name"),"BC_City":lead.get("BC_City"),"Telephone":lead.get("Company_phone"),"Shipping_Phone":lead.get("Shipping_Contact_Telephone"),"SP_Postal_Zip_Code":lead.get("SP_Postal_Zip_Code"),"BC_Country":lead.get("BC_Country"),"Person_1_Last_Name":lead.get("Person_1_Last_Name"),"SP_Street_Address":lead.get("Shipping_Contact_Address"),"Phone":lead.get("Phone"),"Description_of_property_to_be_purchased":lead.get("Description_of_property_to_be_purchased"),"Person_2_Telephone":lead.get("Person_2_Telephone"),"CP_Country":lead.get("CP_Country"),"Business_Owner_Telephone":lead.get("Owner_Telephone"),"Billing_Contact_Email":lead.get("Billing_Contact_Email"),"Accountant_Telephone":lead.get("Accountant_Telephone"),"Accountant_Email":lead.get("Accountant_Email"),"Title":lead.get("Designation"),"Sellers_permit":lead.get("Sellers_permit"),"BC_First_Name":lead.get("Billing_Contact_name"),"BC_State_Region_Province":lead.get("BC_State_Region_Province"),"Business_Owner_Email":lead.get("Owner_Email"),"AC_First_Name":lead.get("Additional_Contact_First_Name"),"Business_category":lead.get("Business_category")};
+customer = zoho.crm.createRecord("Accounts",customerData,Map(),"zcrm");
+businessOwnerData = {"Email":lead.get("Owner_Email"),"First_Name":lead.get("First_Name"),"Last_Name":lead.get("Last_Name"),"Contact_type":"Business Owner","Phone":lead.get("Owner_Telephone"),"Account_Name":{"id":customer.get("id")}};
+logisticManagerData = {"Email":lead.get("Logistic_Manager_Email"),"First_Name":lead.get("Logistic_Manager_First_Name"),"Last_Name":lead.get("LM_Last_Name"),"Contact_type":"Logistic manager","Phone":lead.get("Logistic_Manager_Telephone"),"Account_Name":{"id":customer.get("id")}};
+businessOwnerContact = zoho.crm.createRecord("Contacts",businessOwnerData,Map(),"zcrm");
+logisticManagerContact = zoho.crm.createRecord("Contacts",logisticManagerData,Map(),"zcrm");
+if(lead.get("Accountant_First_Name") != null)
+{
+	AccountantData = {"Email":lead.get("Accountant_Email"),"First_Name":lead.get("Accountant_First_Name"),"Last_Name":lead.get("BA_Last_Name"),"Contact_type":"Accountant","Phone":lead.get("Accountant_Telephone"),"Account_Name":{"id":customer.get("id")}};
+	AccountantContact = zoho.crm.createRecord("Contacts",AccountantData,Map(),"zcrm");
+}
+if(lead.get("Additional_Contact_First_Name") != null)
+{
+	AditionalContactData = {"Email":lead.get("Additional_Contact_Email"),"First_Name":lead.get("Additional_Contact_First_Name"),"Last_Name":lead.get("AC_Last_Name"),"Contact_type":"Additional contact","Phone":lead.get("Additional_Contact_Telephone"),"Account_Name":{"id":customer.get("id")}};
+	AditionalContact = zoho.crm.createRecord("Contacts",AditionalContactData,Map(),"zcrm");
+}
+if(lead.get("Person_1") != null)
+{
+	person1Data = {"First_Name":lead.get("Person_1"),"Last_Name":lead.get("Person_1_Last_Name"),"Contact_type":"pick-up and purchase contact 1","Phone":lead.get("Person_1_Telephone"),"Account_Name":{"id":customer.get("id")}};
+	person1Contact = zoho.crm.createRecord("Contacts",person1Data,Map(),"zcrm");
+}
+if(lead.get("Person_2") != null)
+{
+	person2Data = {"First_Name":lead.get("Person_2"),"Last_Name":lead.get("Person_2_Last_Name"),"Contact_type":"pick-up and purchase contact 2","Phone":lead.get("Person_2_Telephone"),"Account_Name":{"id":customer.get("id")}};
+	person2Contact = zoho.crm.createRecord("Contacts",person2Data,Map(),"zcrm");
+}
+response = invokeurl
+[
+	url :"https://www.zohoapis.com/crm/v2.1/Leads?ids=" + id + "&wf_trigger=true"
+	type :DELETE
+	connection:"zcrm"
+];
+
