@@ -1,0 +1,10 @@
+/*
+	Actualiza los payment terms del campo nativo, en los Customers de Zoho Books
+	
+*/
+void updatePaymentTerms(String contactID, String pTerms)
+{
+companyFields = {"payment_terms_label":pTerms};
+response = zoho.books.updateRecord("contacts","715648898",contactID,companyFields,"zoho_books");
+info response;
+}

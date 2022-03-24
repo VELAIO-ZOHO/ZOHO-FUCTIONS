@@ -1,0 +1,21 @@
+organizationID = organization.get("organization_id");
+//searchParam = {"column_name":"date","search_text":"2022-01-03","search_text_formatted":"2022-01-03","comparator":"major"};
+searchParam = {"page":317,"per_page":1};
+purchaseOrders = zoho.books.getRecords("purchaseorders",organizationID,searchParam,"zbooks_all").get("purchaseorders");
+for each  po in purchaseOrders
+{
+	// 	info "id: ";
+	// 	info r.get("purchaseorder_id");
+	po_id = po.get("purchaseorder_id");
+	purchaseOrder_byId = zoho.books.getRecordsByID("purchaseorders",organizationID,po_id,"zbooks_all").get("purchaseorder");
+	lineItems = purchaseOrder_byId.get("line_items").get(0);
+	rate = lineItems.get("rate").toString().toList(".");
+	//info rate.get(0);
+	
+	custom_fields = {"custom_fields" : [{"label":"Base imponible","value":rate.get(0)}]};
+	//info custom_fields;
+	
+	
+ 	response=zoho.books.updateRecord("purchaseorders", organizationID, po_id , custom_fields, "zbooks_all");	
+ 	//info response;
+}
