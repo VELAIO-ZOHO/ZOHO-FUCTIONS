@@ -1,0 +1,94 @@
+/**
+  * Creado por: David Gomez
+  * Última actualización: 30/06/2022
+  * Utilidad: Creaa una carpeta con el nombre del empleado en la carpeta de Onboarding, posteriormente la función debería almacenar los documentos de onboarding del empleado
+  *	Empresa: velaio.com
+  * Versión: 1.0.0
+  */
+  
+documents = zoho.people.getRecordByID("Documentos_a_entregar",id,"zpeople_all");
+name = documents.get("AddedBy");
+urlDocumentoIdent = documents.get("Documento_de_identidad_downloadUrl");
+urlCarnetSalud = documents.get("Carnet_de_salud_downloadUrl");
+name = name.remove("-");
+params = {"newCatName":name,"parentCatId":"686751000000222896"};
+newFolder = invokeurl
+[
+url :"https://people.zoho.com/api/files/addFolder"
+type :GET
+parameters:params
+connection:"zpeople_all"
+];
+newFolderID = newFolder.get("response").get("result").get("CatID");
+//info newFolderID;
+employeeID = documents.get("AddedBy.ID");
+// Obtener la confirmación
+// getData = {"fileType":"0","catId":"686751000000222896","employeeId":employeeID,"filterBy":"all"};
+// confirmation = invokeurl
+// [
+// url :"https://people.zoho.com/people/api/files/getAllFiles"
+// type :GET
+// parameters:getData
+// connection:"zpeople_all"
+// ];
+// confirmationID = confirmation.get("response").get("result").get("0").get("fileID");
+// hasta aquí se obtiene la confirmación
+// // moveData = {"catId":newFolderID,"fileId":confirmationID};
+// info moveData;
+// moveConfirmation = invokeurl
+// [
+// url :"https://people.zoho.com/people/api/files/editFile"
+// parameters: moveData
+// type :POST
+// connection:"zpeople_all"
+// ];
+// info moveConfirmation;
+
+documentoIdentidad = invokeurl
+[
+url :urlDocumentoIdent
+type :GET
+connection:"zpeople_all"
+];
+
+info documentoIdentidad;
+
+documentoIdentidad.setParamName("uploadfile");
+// fileslist = List();
+// fileslist.add(documentoIdentidad);
+
+fileDesc = "payslip";
+
+file_param = list();
+
+file_param.add({"paramName":"uploadfile","content":documentoIdentidad});
+
+file_param.add({"paramName":"fileType","content":"0","stringPart":"true"});
+
+file_param.add({"paramName":"fileName","content":"fileName123","stringPart":"true"});
+
+file_param.add({"paramName":"employeeId","content":employeeID,"stringPart":"true"});
+
+file_param.add({"paramName":"isreportingTo","content":"0","stringPart":"true"});
+
+file_param.add({"paramName":"catId","content":newFolderID,"stringPart":"true"});
+
+file_param.add({"paramName":"fileDesc","content":fileDesc,"stringPart":"true"});
+
+file_param.add({"paramName":"confidential","content":"0","stringPart":"true"});
+
+toFile = invokeurl
+
+[
+
+url :"https://people.zoho.com/people/api/files/uploadFileMultipart?"
+
+type :POST
+
+files:file_param
+
+connection:"zpeople_all"
+
+];
+
+info toFile;
