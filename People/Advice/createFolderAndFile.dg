@@ -1,15 +1,19 @@
+
 /**
   * Creado por: David Gomez
-  * Última actualización: 30/06/2022
-  * Utilidad: Creaa una carpeta con el nombre del empleado en la carpeta de Onboarding, posteriormente la función debería almacenar los documentos de onboarding del empleado
+  * Última actualización: 01/07/2022
+  * Utilidad: Creaa una carpeta con el nombre del empleado en la carpeta de Onboarding, Almacena documentos de otros formularios en la carpeta creada
   *	Empresa: velaio.com
-  * Versión: 1.0.0
+  * Versión: 1.0.2
   */
-  
 documents = zoho.people.getRecordByID("Documentos_a_entregar",id,"zpeople_all");
+employeeID = documents.get("AddedBy.ID");
+employee = zoho.people.getRecordByID("P_Employee",employeeID,"zpeople_all");
+urlCV = employee.get("CV_downloadUrl");
 name = documents.get("AddedBy");
 urlDocumentoIdent = documents.get("Documento_de_identidad_downloadUrl");
 urlCarnetSalud = documents.get("Carnet_de_salud_downloadUrl");
+info "url vacía: " + urlCarnetSalud;
 name = name.remove("-");
 params = {"newCatName":name,"parentCatId":"686751000000222896"};
 newFolder = invokeurl
@@ -20,8 +24,8 @@ parameters:params
 connection:"zpeople_all"
 ];
 newFolderID = newFolder.get("response").get("result").get("CatID");
-//info newFolderID;
-employeeID = documents.get("AddedBy.ID");
+info newFolderID;
+
 // Obtener la confirmación
 // getData = {"fileType":"0","catId":"686751000000222896","employeeId":employeeID,"filterBy":"all"};
 // confirmation = invokeurl
@@ -43,7 +47,6 @@ employeeID = documents.get("AddedBy.ID");
 // connection:"zpeople_all"
 // ];
 // info moveConfirmation;
-
 documentoIdentidad = invokeurl
 [
 url :urlDocumentoIdent
@@ -51,44 +54,95 @@ type :GET
 connection:"zpeople_all"
 ];
 
-info documentoIdentidad;
-
 documentoIdentidad.setParamName("uploadfile");
-// fileslist = List();
-// fileslist.add(documentoIdentidad);
+extDocument = documentoIdentidad.toList(".");
+extDocument = extDocument.get(extDocument.size()-1);
+documentoIdentidad.setFileName("Documento de identidad " + name + "." + extDocument);
+
+info "Documento: " + documentoIdentidad;
 
 fileDesc = "payslip";
-
 file_param = list();
-
 file_param.add({"paramName":"uploadfile","content":documentoIdentidad});
-
 file_param.add({"paramName":"fileType","content":"0","stringPart":"true"});
-
-file_param.add({"paramName":"fileName","content":"fileName123","stringPart":"true"});
-
+file_param.add({"paramName":"fileName","content":"Documento de identidad " + name,"stringPart":"true"});
 file_param.add({"paramName":"employeeId","content":employeeID,"stringPart":"true"});
-
 file_param.add({"paramName":"isreportingTo","content":"0","stringPart":"true"});
-
 file_param.add({"paramName":"catId","content":newFolderID,"stringPart":"true"});
-
 file_param.add({"paramName":"fileDesc","content":fileDesc,"stringPart":"true"});
-
 file_param.add({"paramName":"confidential","content":"0","stringPart":"true"});
 
-toFile = invokeurl
-
+toFileDoc = invokeurl
 [
-
 url :"https://people.zoho.com/people/api/files/uploadFileMultipart?"
-
 type :POST
-
 files:file_param
-
 connection:"zpeople_all"
-
 ];
+info toFileDoc;
 
-info toFile;
+if ( urlCV != "" ) 
+{
+cv = invokeurl
+[
+url :urlCV
+type :GET
+connection:"zpeople_all"
+];
+cv.setParamName("uploadfile");
+extDocument = documentoIdentidad.toList(".");
+extDocument = extDocument.get(extDocument.size()-1);
+cv.setFileName("CV " + name + "." + extDocument);
+info "CV: " + cv;
+
+file_param2 = list();
+file_param2.add({"paramName":"uploadfile","content":cv});
+file_param2.add({"paramName":"fileType","content":"0","stringPart":"true"});
+file_param2.add({"paramName":"fileName","content":"CV " + name,"stringPart":"true"});
+file_param2.add({"paramName":"employeeId","content":employeeID,"stringPart":"true"});
+file_param2.add({"paramName":"isreportingTo","content":"0","stringPart":"true"});
+file_param2.add({"paramName":"catId","content":newFolderID,"stringPart":"true"});
+file_param2.add({"paramName":"fileDesc","content":fileDesc,"stringPart":"true"});
+file_param2.add({"paramName":"confidential","content":"0","stringPart":"true"});
+
+toFileCV = invokeurl
+[
+url :"https://people.zoho.com/people/api/files/uploadFileMultipart?"
+type :POST
+files:file_param2
+connection:"zpeople_all"
+];
+info toFileCV;}
+
+if ( urlCarnetSalud != "" ) 
+{
+carnetSalud = invokeurl
+[
+url : urlCarnetSalud
+type :GET
+connection:"zpeople_all"
+];
+carnetSalud.setParamName("uploadfile");
+extDocument = carnetSalud.toList(".");
+extDocument = extDocument.get(extDocument.size()-1);
+carnetSalud.setFileName("Carnet Salud " + name + "." + extDocument);
+info "carnetSalud: " + carnetSalud;
+
+file_param3 = list();
+file_param3.add({"paramName":"uploadfile","content":carnetSalud});
+file_param3.add({"paramName":"fileType","content":"0","stringPart":"true"});
+file_param3.add({"paramName":"fileName","content":"carnetSalud " + name,"stringPart":"true"});
+file_param3.add({"paramName":"employeeId","content":employeeID,"stringPart":"true"});
+file_param3.add({"paramName":"isreportingTo","content":"0","stringPart":"true"});
+file_param3.add({"paramName":"catId","content":newFolderID,"stringPart":"true"});
+file_param3.add({"paramName":"fileDesc","content":fileDesc,"stringPart":"true"});
+file_param3.add({"paramName":"confidential","content":"0","stringPart":"true"});
+
+toFileCarnetSalud = invokeurl
+[
+url :"https://people.zoho.com/people/api/files/uploadFileMultipart?"
+type :POST
+files:file_param3
+connection:"zpeople_all"
+];
+info toFileCarnetSalud;}
