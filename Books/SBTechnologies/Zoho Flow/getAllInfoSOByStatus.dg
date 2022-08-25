@@ -1,0 +1,27 @@
+list getAllInfoSOByStatus(string status, string organization_id)
+{
+/**
+ * Realiza una búsqueda de todos los SO en el estado ingresado
+ * Recorre todos los SO, y obtiene toda su información para devolverla en una lista
+ *
+ * Desarrollado por: velaio.com - David Gomez
+ * Fecha creación: 25/08/2022
+ */
+// Búsqueda de todos los SO
+api_calls = 0;
+soAllInfo = list();
+searched_so_resp = zoho.books.getRecords("salesorders",organization_id,{"status":status},"zoho_books");
+searched_so = searched_so_resp.get("salesorders");
+api_calls = api_calls + 1;
+//Recorrido de todas las SO obteniendo todos sus datos
+for each  so in searched_so
+{
+	so_id = so.get("salesorder_id");
+	so_by_id = zoho.books.getRecordsByID("salesorders",organization_id,so_id,"zoho_books").get("salesorder");
+	api_calls = api_calls + 1;
+	soAllInfo.add(so_by_id);
+}
+info "End of execution!";
+info "API CALLS: " + api_calls;
+return soAllInfo;
+}

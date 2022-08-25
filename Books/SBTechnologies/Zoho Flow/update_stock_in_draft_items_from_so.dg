@@ -1,4 +1,4 @@
-list update_stock_in_draft_items_from_so(string salesorder_id, string organization_id)
+list update_stock_in_draft_items_from_so(string salesorder_id, string organization_id, list searched_draft_so)
 {
 /**
  * Recorre los items relacionados del Sale Order entrante (en adelante: SO).
@@ -11,6 +11,11 @@ list update_stock_in_draft_items_from_so(string salesorder_id, string organizati
  * y estos valores los copiamos al los campos custom con los mismos nombres.
  *
  * Desarrollado por: velaio.com
+ * Version: 1.1
+ * Editada por: David Gomez
+ * Fecha: 25/08/2022
+ * Cambios: Se extrae la funcionalidad que busca las SO en estado Draft y luego las recorre para ir obteniendo cada orden
+ * por ID, esto con el fin de optimizar los tiempos de respuesta de la misma.
  */
 api_calls = 0;
 initial_so_items = List();
@@ -34,19 +39,13 @@ if(initial_salesorder_resp.get("message") == "success")
 		initial_item_name = item.get("name");
 		initial_item_qty = item.get("quantity");
 		info "Item " + initial_item_name + " with ID " + initial_item_id + " found!";
-		// Búsqueda de todos los SO - Draft
-		searched_draft_so_resp = zoho.books.getRecords("salesorders",organization_id,{"status":"draft"},"zoho_books");
-		searched_draft_so = searched_draft_so_resp.get("salesorders");
-		api_calls = api_calls + 1;
 		// Recorremos todos los SO - Draft
 		if(searched_draft_so.size() > 0)
 		{
 			for each  searched_so in searched_draft_so
 			{
 				searched_so_id = searched_so.get("salesorder_id");
-				searched_so_by_id = zoho.books.getRecordsByID("salesorders",organization_id,searched_so_id,"zoho_books").get("salesorder");
-				api_calls = api_calls + 1;
-				searched_so_items = searched_so_by_id.get("line_items");
+				searched_so_items = searched_so.get("line_items");
 				// Recorremos todos los items de los SO - Draft
 				for each  searched_so_item in searched_so_items
 				{
