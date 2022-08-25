@@ -1,4 +1,4 @@
-void update_so_toggle_items_glitch(string salesorder_id, string salesorder_number, string organization_id, list line_items_in_so)
+void update_so_toggle_items_glitch(string salesorder_id, string salesorder_number, string organization_id, list line_items_in_so, list searched_so_draft)
 {
 /**
   * Cuando entra un Sale Order (en aldelante SO), este identifica los items que tiene asociados,
@@ -8,7 +8,12 @@ void update_so_toggle_items_glitch(string salesorder_id, string salesorder_numbe
   * los campos personalizados asociados a un SO.
   * 
   * Desarrollado por: velaio.com
-  */
+  * Version: 1.1
+  * Editada por: David Gomez
+  * Fecha: 25/08/2022
+  * Cambios: Se extrae la funcionalidad que busca las SO en estado Draft y luego las recorre para ir obteniendo cada orden
+  * por ID, esto con el fin de optimizar los tiempos de respuesta de la funcionalidad.
+ */
 api_calls = 0;
 info "Entry Sales Order [" + salesorder_id + "] with " + line_items_in_so.size() + " items";
 // Recorremos los items del SO entrante
@@ -18,18 +23,13 @@ for each  item in line_items_in_so
 	item_name = item.get("name");
 	qty_saled = item.get("quantity");
 	qtys_in_all_so_draft = 0;
-	// Búsqueda de todos los SO - Draft
-	searched_so_draft = zoho.books.getRecords("salesorders",organization_id,{"status":"draft"},"zoho_books").get("salesorders");
-	api_calls = api_calls + 1;
 	info "Searching item [" + item_name + "] in " + searched_so_draft.size() + " draft SO found";
 	// Recorremos todos los SO - Draft
 	for each  so_draft in searched_so_draft
 	{
 		draft_salesorder_id = so_draft.get("salesorder_id");
 		draft_salesorder_number = so_draft.get("salesorder_number");
-		salesorder_draft_by_id = zoho.books.getRecordsByID("salesorders",organization_id,draft_salesorder_id,"zoho_books").get("salesorder");
-		api_calls = api_calls + 1;
-		line_items_so_draft = salesorder_draft_by_id.get("line_items");
+		line_items_so_draft = so_draft.get("line_items");
 		// Recorremos todos los items de los SO - Draft
 		index = 0;
 		item_to_remove = Collection();

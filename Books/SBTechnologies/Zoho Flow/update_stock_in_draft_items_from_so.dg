@@ -15,7 +15,7 @@ list update_stock_in_draft_items_from_so(string salesorder_id, string organizati
  * Editada por: David Gomez
  * Fecha: 25/08/2022
  * Cambios: Se extrae la funcionalidad que busca las SO en estado Draft y luego las recorre para ir obteniendo cada orden
- * por ID, esto con el fin de optimizar los tiempos de respuesta de la misma.
+ * por ID, esto con el fin de optimizar los tiempos de respuesta de la funcionalidad.
  */
 api_calls = 0;
 initial_so_items = List();
