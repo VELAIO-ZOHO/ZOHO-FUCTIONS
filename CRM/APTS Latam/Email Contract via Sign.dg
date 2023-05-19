@@ -1,0 +1,184 @@
+// Funcionalidad copiada de APTS Latam, aquí ellos envían por email un documento de writter, y lo hacen firmar con Zoho Sign.
+// https://help.zoho.com/portal/en/community/topic/any-way-to-automate-mail-merge-and-zoho-sign-using-workflow
+// https://theworkflowacademy.com/send-zohosign-document-via-deluge-in-zoho-crm/
+// run a series of checks before sending for signature
+//modified 26.04.23 to not use subform info
+r_ReservaRecord = zoho.crm.getRecordById("Reservas",ReservaId);
+r_ProductRecord = zoho.crm.getRecordById("Products",ProductId);
+r_AccountRecord = zoho.crm.getRecordById("Accounts",AccountId);
+r_BookerRecord = zoho.crm.getRecordById("Contacts",BookerId);
+TopesProduct = r_ReservaRecord.get("Topes_Servicios");
+ValorTopes = r_ReservaRecord.get("Valor_Topes_mes");
+TopesAptsLatam = if(r_ProductRecord.get("Pais") == "Colombia",if(r_ProductRecord.get("Habitaciones") >= 3,"530,000 COP",if(r_ProductRecord.get("Habitaciones") == 2,"430,000 COP","330,000 COP")),if(r_ProductRecord.get("Habitaciones") >= 3,"200 USD",if(r_ProductRecord.get("Habitaciones") == 2,"175 USD","150 USD")));
+ClientStatus = r_AccountRecord.get("Estado");
+ReservaOwner = r_ReservaRecord.get("Owner");
+OwnerEmail = ReservaOwner.get("email");
+// get merge fields from mail merge template
+getfields = invokeurl
+[
+	url :"https://writer.zoho.com/api/v1/documents/14mgm52ec274fedf94253a51c149927a9daa1/mergefields"
+	type :GET
+	connection:"joels"
+];
+//get merge field names
+v_TemplateID = "14mgm52ec274fedf94253a51c149927a9daa1";
+r_Fields = zoho.writer.getMergeFields(v_TemplateID,"joels");
+//info r_Fields;
+//header merge fields
+Booker_Email = r_BookerRecord.get("Email");
+Booker_first = r_BookerRecord.get("First_Name");
+Booker_last = r_BookerRecord.get("Last_Name");
+Booker_fullname = Booker_first + " " + Booker_last;
+Contract_number = r_ReservaRecord.get("Name");
+Apto_Name = r_ProductRecord.get("Product_Name");
+Empresa_Name = r_AccountRecord.get("Account_Name");
+/*Silverdoor used to report client tariff as zero except iberia EmpresaRecId == "4530271000004490067"
+EmpresaRecId = r_AccountRecord.get("id");
+if(EmpresaRecId == "4530271000004490072" || EmpresaRecId == "4530271000000397191")
+{
+	ClientRate = 0;
+}
+else
+{
+	ClientRate = r_ReservaRecord.get("Tarifa_al_Cliente_por_noche");
+}
+info EmpresaRecId;
+info ClientRate;
+OLD subform data API name is "Facturacion" fetch as list https://help.zoho.com/portal/en/community/topic/crm-subforms-and-deluge
+subformList = r_ReservaRecord.get("Facturacion");
+//get specific fields from subform row 0 top row
+SFCliente_Com = subformList.get(0).get("Cliente_Com");
+SFCliente_Final = subformList.get(0).get("Cliente_Final");
+SFCliente_Inicio = subformList.get(0).get("Cliente_Inicio");
+SFCliente_Moneda = subformList.get(0).get("Cliente_Moneda");
+SFTarifa_ClienteSF = subformList.get(0).get("Tarifa_ClienteSF");
+NightsContract = daysBetween(SFCliente_Inicio,SFCliente_Final);
+*/
+m_Data = Map();
+m_Data.put("Date1",r_ReservaRecord.get("Fecha_de_Llegada"));
+m_Data.put("Date2",r_ReservaRecord.get("Fecha_de_Salida"));
+m_Data.put("Number_1",r_ReservaRecord.get("Noches"));
+m_Data.put("Empresa.Account_Name",r_AccountRecord.get("Account_Name"));
+m_Data.put("Empresa.Clausula_Contrato",r_AccountRecord.get("Clausula_Contrato"));
+m_Data.put("Booker.Email",r_BookerRecord.get("Email"));
+m_Data.put("Booker.First_Name",r_BookerRecord.get("First_Name"));
+m_Data.put("Booker.Last_Name",r_BookerRecord.get("Last_Name"));
+m_Data.put("Booker.Mobile",r_BookerRecord.get("Mobile"));
+m_Data.put("Booker.Phone",r_BookerRecord.get("Phone"));
+m_Data.put("Inmueble.Calle",r_ProductRecord.get("Calle"));
+m_Data.put("Inmueble.Capacidad_Max",r_ProductRecord.get("Capacidad_Max"));
+m_Data.put("Inmueble.Ciudad",r_ProductRecord.get("Ciudad"));
+m_Data.put("Inmueble.Codigo_Postal",r_ProductRecord.get("Codigo_Postal"));
+m_Data.put("Inmueble.Habitaciones",r_ProductRecord.get("Habitaciones"));
+m_Data.put("Inmueble.Latitude",r_ProductRecord.get("Latitude"));
+m_Data.put("Inmueble.Longitud",r_ProductRecord.get("Longitud"));
+m_Data.put("Inmueble.Nombre_Edificio",r_ProductRecord.get("Nombre_Edificio"));
+m_Data.put("Inmueble.Pais",r_ProductRecord.get("Pais"));
+m_Data.put("Inmueble.Product_Name",r_ProductRecord.get("Product_Name"));
+m_Data.put("Adultos",r_ReservaRecord.get("Adultos"));
+m_Data.put("Cancelacion",r_ReservaRecord.get("Cancelacion"));
+m_Data.put("Clausula_adicional",r_ReservaRecord.get("Clausula_adicional"));
+m_Data.put("Cliente_Comision",r_ReservaRecord.get("Cliente_Comision"));
+m_Data.put("Cobro_Adicional",r_ReservaRecord.get("Cobro_Adicional"));
+m_Data.put("Cotizacion_AptsLatam",r_ReservaRecord.get("Cotizacion_AptsLatam"));
+m_Data.put("Divisa",r_ReservaRecord.get("Divisa"));
+m_Data.put("Estadia_Min",r_ReservaRecord.get("Estadia_Min"));
+m_Data.put("Extra",r_ReservaRecord.get("Extra"));
+m_Data.put("Extra_cobro",r_ReservaRecord.get("Extra_cobro"));
+m_Data.put("Extra_valor",r_ReservaRecord.get("Extra_valor"));
+m_Data.put("Fecha_de_Llegada",r_ReservaRecord.get("Fecha_de_Llegada"));
+m_Data.put("Fecha_de_Salida",r_ReservaRecord.get("Fecha_de_Salida"));
+m_Data.put("Hora_de_Llegada",r_ReservaRecord.get("Hora_de_Llegada"));
+m_Data.put("Limpieza",r_ReservaRecord.get("Limpieza"));
+m_Data.put("Limpieza_cobro",r_ReservaRecord.get("Limpieza_cobro"));
+m_Data.put("Limpieza_valor",r_ReservaRecord.get("Limpieza_valor"));
+m_Data.put("Lista_de_Huespedes",r_ReservaRecord.get("Lista_de_Huespedes"));
+m_Data.put("Mascota_cobro",r_ReservaRecord.get("Mascota_cobro"));
+m_Data.put("Mascota_valor",r_ReservaRecord.get("Mascota_valor"));
+m_Data.put("Mascotas",r_ReservaRecord.get("Mascotas"));
+m_Data.put("Name",r_ReservaRecord.get("Name"));
+m_Data.put("Ni_os",r_ReservaRecord.get("Ni_os"));
+m_Data.put("Noches",r_ReservaRecord.get("Noches"));
+m_Data.put("Nombre_huesped_principal",r_ReservaRecord.get("Nombre_huesped_principal"));
+m_Data.put("Nota_contrato",r_ReservaRecord.get("Nota_contrato"));
+m_Data.put("NTV",r_ReservaRecord.get("NTV"));
+m_Data.put("Cancelacion",r_ReservaRecord.get("Cancelacion"));
+m_Data.put("Parqueadero",r_ReservaRecord.get("Parqueadero"));
+m_Data.put("Parqueadero_cobro",r_ReservaRecord.get("Parqueadero_cobro"));
+m_Data.put("Parqueadero_valor",r_ReservaRecord.get("Parqueadero_valor"));
+m_Data.put("Ref_cliente",r_ReservaRecord.get("Ref_cliente"));
+m_Data.put("Currency_1",r_ReservaRecord.get("Tarifa_al_Cliente_por_noche"));
+m_Data.put("Tipo_mascota",r_ReservaRecord.get("Tipo_mascota"));
+m_Data.put("Topes_Servicios",r_ReservaRecord.get("Topes_Servicios"));
+m_Data.put("Valor_deposito",r_ReservaRecord.get("Valor_deposito"));
+m_Data.put("Valor_Topes_mes",r_ReservaRecord.get("Valor_Topes_mes"));
+m_Data.put("Text2",TopesAptsLatam);
+//merge data used in template conditional fields
+m_Data.put("Empresa.Dias_de_Credito",r_AccountRecord.get("Dias_de_Credito"));
+m_Data.put("Empresa.Proceso_de_Confirmacion",r_AccountRecord.get("Proceso_de_Confirmacion"));
+m_Data.put("Empresa.Dias_de_Credito",r_AccountRecord.get("Dias_de_Credito"));
+m_Data.put("Empresa.Proceso_de_Confirmacion",r_AccountRecord.get("Proceso_de_Confirmacion"));
+md = {"data":m_Data};
+//https://www.zoho.com/writer/help/api/v1/merge-and-sign.html
+if(ClientStatus != "Cliente Aprobado")
+{
+	NewClientMsg = "Después de aprobar este acuerdo, dado que sido registrado cono cliente nuevo , le serán solicitados los documentos correspondientes para abrir una cuenta con nosotros. / After approving this agreement, as a new client you will be required to submit documents to open an account with us.";
+}
+else
+{
+	NewClientMsg = "";
+}
+sd = {{"recipient_1":Booker_Email,"recipient_name":Booker_fullname,"private_notes":NewClientMsg},{"recipient_2":OwnerEmail,"action_type":"view"},{"recipient_3":"ruth.salamanca@aptslatam.com","action_type":"view"}};
+mp = Map();
+mp.put("service_name","zohosign");
+mp.put("filename","AptsLatam " + Contract_number + " - " + Apto_Name + " - " + Empresa_Name);
+mp.put("message","Aprobación de este acuerdo es indispensable para finalizar su proceso de reservas, su reserva aún NO está confirmada, estará en hold por 24 horas despúes de este tiempo será necesario reconfirmar la disponiblidad. / Approval of this agreement is required to continue with your reservation, your reservation is currently NOT confirmed and has been placed on hold for 24 hours, after this time availability must be checked again.");
+mp.put("subject","AptsLatam - Contract / Contrato " + Contract_number + " - " + Apto_Name + " - " + Empresa_Name);
+mp.put("sign_in_order",true);
+// test mode to true to test & not consume credits
+mp.put("test_mode",false);
+mp.put("signer_data",sd);
+mp.put("merge_data",md);
+mergesign = invokeurl
+[
+	url :"https://writer.zoho.com/api/v1/documents/14mgm52ec274fedf94253a51c149927a9daa1/merge/sign"
+	type :POST
+	parameters:mp
+	connection:"joels"
+];
+// update reservation status to pdt firma
+updatevalue = Map();
+updatevalue.put("Estado","Pdt Firma");
+UpdateResponse = zoho.crm.updateRecord("Reservas",input.ReservaId,updatevalue);
+/*Get the Template Name - used as the name for the record in the "ZohoSign Documents" module in Zoho CRM later
+	template = zoho.sign.getTemplateById("14mgm52ec274fedf94253a51c149927a9daa1");
+	templatename = template.get("templates").get("template_name");
+	//Get the Zoho Sign Document ID
+	requests = mergesign.get("requests");
+	docs = requests.get("document_ids");
+	docinfo = docs.get(0);
+	docid = docinfo.get("document_id");
+	//Get the Zoho Sign Request ID
+	reqid = requests.get("request_id");
+	docinfo = docs.get(0);
+	docid = docinfo.get("document_id");
+	*/
+//Create Map for CRM Record - ZohoSign Documents
+recordmap = Map();
+recordmap.put("Name",Contract_number + " - " + Apto_Name + " - " + Empresa_Name);
+//recordmap.put("zohosign__Account",AccountId);
+//recordmap.put("zohosign__Deal",dealid);
+//recordmap.put("zohosign__Owner",deal.get("Owner").get("id"));
+//recordmap.put("zohosign__Date_Sent",today);
+//recordmap.put("zohosign__ZohoSign_Document_ID",docid);
+//recordmap.put("zohosign__Module_Record_ID",dealid.toString());
+//recordmap.put("zohosign__Document_Deadline",today.addDay(3));
+//--> This is arbitrary
+//recordmap.put("zohosign__Document_Status","Out for Signature");
+/*Check Date and Frequency are additional fields created in the "ZohoSign Documents" CRM Module to control the email notification triggering and field update via workflow rule
+	recordmap.put("Check_Date",today.addDay(1));
+	recordmap.put("Frequency",0);
+	recordmap.put("Request_ID",reqid);
+	*/
+//Create a Record in the "ZohoSign Documents" module in Zoho CRM
+create = zoho.crm.createRecord("zohosign__ZohoSign_Documents",recordmap);
