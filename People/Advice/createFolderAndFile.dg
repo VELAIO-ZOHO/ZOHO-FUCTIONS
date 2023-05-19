@@ -1,4 +1,3 @@
-
 /**
   * Creado por: David Gomez
   * Última actualización: 30/06/2022
@@ -13,19 +12,16 @@ searchMap.put("searchField","AddedBy");
 searchMap.put("searchOperator","Contains");
 searchMap.put("searchText",addedBy);
 documents = zoho.people.getRecords("Documentos_a_entregar",0,1,searchMap);
-
 id = documents.get(0).get("Zoho_ID");
-
 employee = zoho.people.getRecordByID("P_Employee",employeeID,"zpeople_all");
-
 urlCV = employee.get("CV_downloadUrl");
 name = documents.get(0).get("AddedBy");
 name = name.remove("-");
-name = name.replaceAllIgnoreCase("á", "a").replaceAllIgnoreCase("é", "e").replaceAllIgnoreCase("í", "i").replaceAllIgnoreCase("ó", "o").replaceAllIgnoreCase("ú", "u");
+name = name.replaceAllIgnoreCase("á","a").replaceAllIgnoreCase("é","e").replaceAllIgnoreCase("í","i").replaceAllIgnoreCase("ó","o").replaceAllIgnoreCase("ú","u");
 urlDocumentoIdent = documents.get(0).get("Documento_de_identidad_downloadUrl");
 urlCarnetSalud = documents.get(0).get("Carnet_de_salud_downloadUrl");
-
 params = {"newCatName":name,"parentCatId":"686751000000222896"};
+//info employee;
 //Creamos la carpeta del empleado
 newFolder = invokeurl
 [
@@ -47,12 +43,11 @@ parameters:getData
 connection:"zpeople_all"
 ];
 confirmationID = confirmation.get("response").get("result").get("0").get("fileID");
-
 conf = invokeurl
 [
-	url :"https://people.zoho.com/people/api/files/downloadFile?fileId=" + confirmationID
-	type :GET
-	connection:"zpeople_all"
+url :"https://people.zoho.com/people/api/files/downloadFile?fileId=" + confirmationID
+type :GET
+connection:"zpeople_all"
 ];
 conf.setParamName("uploadfile");
 extDocument = conf.toList(".");
@@ -71,20 +66,19 @@ file_param4.add({"paramName":"fileDesc","content":fileDesc,"stringPart":"true"})
 file_param4.add({"paramName":"confidential","content":"0","stringPart":"true"});
 toFileConfirm = invokeurl
 [
-	url :"https://people.zoho.com/people/api/files/uploadFileMultipart?"
-	type :POST
-	files:file_param4
-	connection:"zpeople_all"
+url :"https://people.zoho.com/people/api/files/uploadFileMultipart?"
+type :POST
+files:file_param4
+connection:"zpeople_all"
 ];
 info toFileConfirm;
 deleteConf = invokeurl
 [
-	url :"https://people.zoho.com/people/api/files/deleteFiles?deleteFileId=" + confirmationID
-	type :POST
-	connection:"zpeople_all"
+url :"https://people.zoho.com/people/api/files/deleteFiles?deleteFileId=" + confirmationID
+type :POST
+connection:"zpeople_all"
 ];
 info deleteConf;
-
 //Obtenemos el documento de identidad
 documentoIdentidad = invokeurl
 [
