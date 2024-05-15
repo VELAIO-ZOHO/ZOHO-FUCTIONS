@@ -1,0 +1,90 @@
+/*
+	This function will be...
+	
+	build by: dgomez@velaio.com
+	last update: 6 may 2024
+*/
+id = "5993722000005740069"; 
+//info bURL;
+delay = invokeurl
+[
+	url: "https://postman-echo.com/delay/10"
+	type: GET
+	
+];
+delay2 = invokeurl
+[
+	url: "https://postman-echo.com/delay/10"
+	type: GET
+	
+];
+response = invokeurl
+[
+    url: "https://www.zohoapis.com/crm/v6/Contacts/" + id + "/__timeline?sort_by=audited_time&include_inner_details=field_history.data_type"
+
+    type: GET
+
+    connection: "zoho_"
+];
+
+
+
+lname = "";
+fname = "";
+count = 0;
+response = response.get("__timeline");
+for each modification in response
+{
+	count = count + 1;
+	if (modification.get("automation_details") != null )
+{
+    if (modification.get("field_history") != null && modification.get("automation_details").get("name") == "addEventAndContactFromZohoBookings")
+    {
+        info modification;
+        fieldsUpdated = modification.get("field_history");
+        for each field in fieldsUpdated
+
+        {
+            if (field.get("api_name") == "Last_Name")
+            {
+                lname = field.get("_value").get("old");
+                //updateClient = zoho.crm.updateRecord("Contacts", id,{ "Last_Name":lname});
+        //info updateClient;
+   			 }
+			 if (field.get("api_name") == "First_Name")
+            {
+                fname = field.get("_value").get("old");
+                //updateClient = zoho.crm.updateRecord("Contacts", id,{ "Last_Name":lname});
+        //info updateClient;
+   			 }
+			 
+	}}
+	if ( lname != "" ) 
+    {
+		Break;
+    }
+	
+	}else if (modification.get("source")== "crm_ui" && modification.get("field_history") != null) 
+    {
+		fieldModified = modification.get("field_history");
+		for each field in fieldModified
+        {
+			if (field.get("api_name") == "Full_Name")
+            {
+               break;
+   			 }
+        }
+    }
+}
+if ( fname != "" ) 
+{
+	lname = fname + " " + lname;
+}
+if ( lname != "" ) 
+{
+	updateClient = zoho.crm.updateRecord("Contacts", id,{ "Last_Name":lname});
+ info updateClient;
+}
+
+info lname;
+ info count;
