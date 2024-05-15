@@ -9,11 +9,4 @@ Archivos con funciones creadas para entornos de desarrollos realizados con [Zoho
 
 # Autor
 
-## Brayan Devia Machado
-
-_Analista y Desarrollador de sistemas de información_
-
-Contacto:
-[Facebook](https://www.facebook.com/BrayanDevM.Developer) |
-[Instagram](https://www.instagram.com/brayan.dev.m/) |
-[WhatsApp](https://api.whatsapp.com/send?phone=573115071561)
+## VELAIO
