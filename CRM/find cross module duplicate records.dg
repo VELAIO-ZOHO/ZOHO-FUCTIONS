@@ -1,0 +1,194 @@
+/*
+check if the lead exist an other lead o client with the same email, phone or ig and if that happed send an email notification with the infomation
+develop by: VELAIO - jmartinez@velaio.com - May 29 2024
+*/
+// existing lead
+/*
+leadId = "3333333333";
+leadEmail = "jmartinez@velaio.com";
+leadPhone = "3175993041";
+leadInstagram = "Dreamchasing.alex";
+
+*/
+leadUrl = "https://crm.zoho.com/crm/org834778280/tab/Leads/" + leadId;
+// Instagram case
+IgfoundListLead = List();
+IgfoundListClient = List();
+if(leadInstagram != "" && leadInstagram != null)
+{
+	// find leads
+	queryMapLeads = Map();
+	queryMapLeads.put("select_query","select Last_Name, First_Name, Full_Name, Instagram from Leads where Instagram = '" + leadInstagram + "'");
+	leadsInstagramValidation = invokeurl
+	[
+		url :"https://www.zohoapis.com/crm/v6/coql"
+		type :POST
+		parameters:queryMapLeads.toString()
+		connection:"zcrm_cnn"
+	];
+	// find clients
+	queryMapClients = Map();
+	queryMapClients.put("select_query","select Last_Name, First_Name, Full_Name, Instagram from Contacts where Instagram = '" + leadInstagram + "'");
+	clientInstagramValidation = invokeurl
+	[
+		url :"https://www.zohoapis.com/crm/v6/coql"
+		type :POST
+		parameters:queryMapClients.toString()
+		connection:"zcrm_cnn"
+	];
+	// validate clients
+	if(clientInstagramValidation.get("data") == null)
+	{
+		info "no encontró ningun record ig client";
+	}
+	else
+	{
+		for each  data in clientInstagramValidation.get("data")
+		{
+			record_foud_id = data.get("id");
+			ig = data.get("Instagram");
+			if(ig != "N/A" && ig != "N/a" && ig != "n/a" && ig != "n/A" && ig != "none" && ig != "None" && ig != "NONE")
+			{
+				IgfoundListClient.add("https://crm.zoho.com/crm/org834778280/tab/Contacts/" + record_foud_id + " <br></br>");
+			}
+		}
+	}
+	// validate leads
+	if(leadsInstagramValidation.get("data") == null)
+	{
+		info "no encontró ningun record ig leads";
+	}
+	else
+	{
+		for each  data in leadsInstagramValidation.get("data")
+		{
+			record_foud_id = data.get("id");
+			info record_foud_id;
+			if(record_foud_id != leadId)
+			{
+				ig = data.get("Instagram");
+				if(ig != "N/A" && ig != "N/a" && ig != "n/a" && ig != "n/A" && ig != "none" && ig != "None" && ig != "NONE")
+				{
+					IgfoundListLead.add("https://crm.zoho.com/crm/org834778280/tab/Leads/" + record_foud_id + " <br></br>");
+				}
+			}
+		}
+	}
+}
+// Phone Case
+phoneFoundListLead = List();
+phoneFoundListClient = List();
+if(leadPhone != "" && leadPhone != null)
+{
+	queryMapLeads = Map();
+	queryMapLeads.put("select_query","select Last_Name, First_Name, Full_Name, Phone from Leads where Phone = '" + leadPhone + "'");
+	searchLeads = invokeurl
+	[
+		url :"https://www.zohoapis.com/crm/v6/coql"
+		type :POST
+		parameters:queryMapLeads.toString()
+		connection:"zcrm_cnn"
+	];
+	queryMapClients = Map();
+	queryMapClients.put("select_query","select Last_Name, First_Name, Full_Name, Phone from Contacts where Phone = '" + leadPhone + "'");
+	searchClients = invokeurl
+	[
+		url :"https://www.zohoapis.com/crm/v6/coql"
+		type :POST
+		parameters:queryMapClients.toString()
+		connection:"zcrm_cnn"
+	];
+	if(searchClients.get("data") == null)
+	{
+		info "no encontró ningun record phone client";
+	}
+	else
+	{
+		for each  data in searchClients.get("data")
+		{
+			record_foud_id = data.get("id");
+			phoneFoundListClient.add("https://crm.zoho.com/crm/org834778280/tab/Contacts/" + record_foud_id + " <br></br>");
+		}
+	}
+	if(searchLeads.get("data") == null)
+	{
+		info searchLeads.size();
+		info "no encontró ningun record phone lead";
+	}
+	else
+	{
+		for each  data in searchLeads.get("data")
+		{
+			record_foud_id = data.get("id");
+			if(record_foud_id != leadId)
+			{
+				phoneFoundListLead.add("https://crm.zoho.com/crm/org834778280/tab/Leads/" + record_foud_id + " <br></br>");
+			}
+		}
+	}
+}
+// Email Case
+EmailFoundListLead = List();
+EmailFoundListClient = List();
+if(leadEmail != "" && leadEmail != null)
+{
+	// buscar leads
+	queryMapLeads = Map();
+	queryMapLeads.put("select_query","select Last_Name, First_Name, Full_Name, Email from Leads where Email = '" + leadEmail + "'");
+	searchLeads = invokeurl
+	[
+		url :"https://www.zohoapis.com/crm/v6/coql"
+		type :POST
+		parameters:queryMapLeads.toString()
+		connection:"zcrm_cnn"
+	];
+	// buscar clients
+	queryMapClients = Map();
+	queryMapClients.put("select_query","select Last_Name, First_Name, Full_Name, Email from Contacts where Email = '" + leadEmail + "'");
+	searchClients = invokeurl
+	[
+		url :"https://www.zohoapis.com/crm/v6/coql"
+		type :POST
+		parameters:queryMapClients.toString()
+		connection:"zcrm_cnn"
+	];
+	if(searchClients.get("data") == null)
+	{
+		info "no encontró ningun record email client";
+	}
+	else
+	{
+		for each  data in searchClients.get("data")
+		{
+			record_foud_id = data.get("id");
+			EmailFoundListClient.add("https://crm.zoho.com/crm/org834778280/tab/Contacts/" + record_foud_id + " <br></br>");
+		}
+	}
+	if(searchLeads.get("data") == null)
+	{
+		info "no encontró ningun record lead email";
+	}
+	else
+	{
+		for each  data in searchLeads.get("data")
+		{
+			record_foud_id = data.get("id");
+			if(record_foud_id != leadId)
+			{
+				EmailFoundListLead.add("https://crm.zoho.com/crm/org834778280/tab/Leads/" + record_foud_id + " <br></br>");
+			}
+		}
+	}
+}
+if(IgfoundListLead.size() > 0 || IgfoundListClient.size() > 0 || phoneFoundListLead.size() > 0 || phoneFoundListClient.size() > 0 || EmailFoundListLead.size() > 0 || EmailFoundListClient.size() > 0)
+{
+	info "<div>Hello<br></div><div><br></div><div>I wanted to inform you about the identification of a potential duplicate in our lead records. Below, I detail the relevant information:<br></div><div><br></div><div>Record url:&nbsp;" + leadUrl + "<br></div><div><br></div><div>Leads:<br></div><div><br></div><div><b>Instagram (IG) Matches</b>: " + IgfoundListLead + "<br></div><div><b>Phone Matches</b>: " + phoneFoundListLead + "<br></div><div><b>Email Matches:</b> " + EmailFoundListLead + "<br></div><div><br></div><div>Clients:<br></div><div><br></div><div><b>Instagram (IG) Matches</b>: " + IgfoundListClient + "<br></div><div><b>Phone Matches</b>: " + phoneFoundListClient + "<br></div><div><b>Email Matches:</b> " + EmailFoundListClient + "<br></div><div><br></div><div><br></div><div>Best regards<br></div>";
+	sendmail
+	[
+		from :zoho.adminuserid
+		to :zoho.adminuserid
+		cc:"jmartinez@velaio.com"
+		subject :"duplicated lead"
+		message :"<div>Hello<br></div><div><br></div><div>I wanted to inform you about the identification of a potential duplicate in our lead records. Below, I detail the relevant information:<br></div><div><br></div><div>Record url:&nbsp;" + leadUrl + "<br></div><div><br></div><div>Leads:<br></div><div><br></div><div><b>Instagram (IG) Matches</b>: " + IgfoundListLead + "<br></div><div><b>Phone Matches</b>: " + phoneFoundListLead + "<br></div><div><b>Email Matches:</b> " + EmailFoundListLead + "<br></div><div><br></div><div>Clients:<br></div><div><br></div><div><b>Instagram (IG) Matches</b>: " + IgfoundListClient + "<br></div><div><b>Phone Matches</b>: " + phoneFoundListClient + "<br></div><div><b>Email Matches:</b> " + EmailFoundListClient + "<br></div><div><br></div><div><br></div><div>Best regards<br></div>"
+	]
+}
