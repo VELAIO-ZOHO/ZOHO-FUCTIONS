@@ -1,0 +1,27 @@
+/*
+	Permite obtener todos los registros necesarios de un módulo, útil para updates masivos o comparación de datos.
+*/
+
+// Search all the "Emitido" sales orders
+organizationId = organization.get("organization_id");
+pageList = {1,2,3,4,5};
+//pageList = {1};
+openPO = List();
+useApiCalls = 0;
+for each  find in pageList
+{
+	query = {"status":"open","page":find,"per_page":"200"};
+	//query = {"status":"open","page":find,"per_page":"1"};
+	//query = {"vendor_id":"91154000006019162","status":"open","page":find,"per_page":"200"};
+	getPO = zoho.books.getRecords("purchaseorders",organizationId,query,"zbooks_all");
+	useApiCalls = useApiCalls + 1;
+	getPO = getPO.get("purchaseorders");
+	if(getPO.size() > 0)
+	{
+		openPO.addAll(getPO);
+	}
+	else
+	{
+		break;
+	}
+}
