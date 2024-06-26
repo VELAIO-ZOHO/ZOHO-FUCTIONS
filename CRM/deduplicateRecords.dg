@@ -1,0 +1,167 @@
+api_calls_used = 0;
+experts_emails = "('jay@asinvestmentgroup.com','sanjeev@dreamsoft4u.com','torsten.muuss@gmx.de','menon_rakesh@yahoo.com','peter.c.weise@gmail.com','ashley@raiteri.net','herman.bloemink@kpnmail.nl','m.derenzi@alumni.sssup.it','csaezcomet@gmail.com','eermishin@mail.ru','andrewkinloch@logiegroup.com','raghu.seelamonthula@gmail.com','romanomatteo@hotmail.com','sami.kobayter@gmail.com','ca.recruits22@gmail.com','gabriela-olivan@hotmail.com','elohimrocha@hotmail.com','ca_carmona2003@yahoo.com.mx','celebrityproperties@gmail.com','tbecker@best-group.eu')";
+params = Map();
+params.put("select_query","select id, Email, Email_Opt_Out, Workflow_Dummy_Value, Created_Time from Experts_recruit where Email in " + experts_emails + " LIMIT 2000");
+
+experts_to_deduplicate = invokeurl
+[
+	url :"https://www.zohoapis.eu/crm/v6/coql"
+	type :POST
+	parameters:params.toString()
+	connection:"zcrm_all"
+];
+
+api_calls_used = api_calls_used + 1;
+//info experts_to_deduplicate;
+experts_to_deduplicate = experts_to_deduplicate.get("data");
+//info "numero de correos a buscar: " + 20;
+info "numero de registros encontrados: " + experts_to_deduplicate.size();
+info "API Calls used to fetch records: " + api_calls_used;
+
+// Agrupar registros por Email
+experts_by_email = map();
+for each  expert in experts_to_deduplicate
+{
+	email = expert.get("Email").toLowerCase(); // Convertir email a minúsculas
+	if(experts_by_email.get(email) != null)
+	{
+		existing_list = experts_by_email.get(email);
+		existing_list.add(expert);
+		experts_by_email.put(email, existing_list);
+	}
+	else
+	{
+		new_list = list();
+		new_list.add(expert);
+		experts_by_email.put(email, new_list);
+	}
+}
+
+info experts_by_email;
+info "Email únicos: " + experts_by_email.size();
+
+// Aplicar criterios de deduplicación y eliminar duplicados
+duplicate_count_map = map();
+all_records_to_delete = list();
+
+for each  email_key in experts_by_email.keys()
+{
+	duplicate_records = experts_by_email.get(email_key);
+	if(duplicate_records.size() > 1)
+	{
+		// Inicializar datos de registro a conservar y eliminar
+		records_info = map();
+		to_delete_ids = list();
+		// Contar duplicados para el email
+		email_info = map();
+		email_info.put("count", duplicate_records.size() - 1);
+		
+		record_to_keep = null;
+		
+		for each  record in duplicate_records
+		{
+			if(record.get("Workflow_Dummy_Value") == "Yes")
+			{
+				record_to_keep = record;
+				break;
+			}
+		}
+		if(record_to_keep == null)
+		{
+			for each  record in duplicate_records
+			{
+				if(record.get("Email_Opt_Out") == "Yes")
+				{
+					record_to_keep = record;
+					break;
+				}
+			}
+		}
+		if(record_to_keep == null)
+		{
+			for each  record in duplicate_records
+			{
+				record_created_time = toDateTime(record.get("Created_Time"));
+				if(record_to_keep == null)
+				{
+					record_to_keep = record;
+				}
+				else
+				{
+					record_to_keep_created_time = toDateTime(record_to_keep.get("Created_Time"));
+					if(record_created_time < record_to_keep_created_time)
+					{
+						record_to_keep = record;
+					}
+				}
+			}
+		}
+		// Agregar ID del registro a conservar al mapa
+		email_info.put("keep", record_to_keep.get("id"));
+		
+		for each  record in duplicate_records
+		{
+			if(record.get("id") != record_to_keep.get("id"))
+			{
+				all_records_to_delete.add(record.get("id"));
+				to_delete_ids.add(record.get("id"));
+			}
+		}
+		// Agregar IDs de registros a eliminar al mapa
+		email_info.put("delete", to_delete_ids);
+		duplicate_count_map.put(email_key, email_info);
+	}
+}
+
+info "Registros a eliminar: " + all_records_to_delete.size();
+info "Conteo de duplicados: " + duplicate_count_map.toString();
+
+// Eliminar registros en lotes de 100
+batch_size = 100;
+current_batch = list();
+for each record_id in all_records_to_delete
+{
+    current_batch.add(record_id);
+    if(current_batch.size() == batch_size)
+    {
+        delete_params = "";
+        for each id in current_batch
+        {
+            delete_params = delete_params + id + ",";
+        }
+        delete_params = delete_params.subString(0, delete_params.length() - 1);
+        urldel = "https://www.zohoapis.eu/crm/v6/Experts_recruit?ids=" + delete_params;
+		//info urldel;
+        response = invokeurl
+        [
+            url: urldel
+            type: DELETE
+            connection: "zcrm_all"
+        ];
+        api_calls_used = api_calls_used + 1;
+        current_batch.clear();
+        info response;
+    }
+}
+
+if(current_batch.size() > 0)
+{
+   delete_params = "";
+    for each id in current_batch
+    {
+        delete_params = delete_params + id + ",";
+    }
+    delete_params = delete_params.subString(0, delete_params.length() - 1);
+	urldel = "https://www.zohoapis.eu/crm/v6/Experts_recruit?ids=" + delete_params;
+	//info urldel;
+    response = invokeurl
+    [
+        url: urldel
+        type: DELETE
+        connection: "zcrm_all"
+    ];
+    api_calls_used = api_calls_used + 1;
+    info response;
+}
+
+info "Total API Calls used: " + api_calls_used;
