@@ -1,3 +1,18 @@
+/* 
+Descripción: 
+Este script en Deluge se utiliza para deduplicar registros en el módulo 'Experts_recruit' de Zoho CRM. Busca correos electrónicos duplicados 
+y aplica criterios específicos para determinar qué registros conservar y cuáles eliminar. 
+Los criterios incluyen valores específicos en los campos 'Workflow_Dummy_Value' y 'Email_Opt_Out', así como la fecha de creación del registro. 
+El script elimina los registros duplicados en lotes de 100 para optimizar las llamadas a la API.
+
+Problema que resuelve:
+Este script resuelve el problema de la duplicación de registros en el CRM, asegurando que solo se conserve el registro más relevante y eliminando 
+los duplicados de manera eficiente. Esto ayuda a mantener la base de datos limpia y organizada, mejorando la integridad y la calidad de los datos.
+
+Fecha de creación: 2024-06-26
+Autor: David Gomez - VELAIO
+*/
+
 api_calls_used = 0;
 experts_emails = "('jay@asinvestmentgroup.com','sanjeev@dreamsoft4u.com','torsten.muuss@gmx.de','menon_rakesh@yahoo.com','peter.c.weise@gmail.com','ashley@raiteri.net','herman.bloemink@kpnmail.nl','m.derenzi@alumni.sssup.it','csaezcomet@gmail.com','eermishin@mail.ru','andrewkinloch@logiegroup.com','raghu.seelamonthula@gmail.com','romanomatteo@hotmail.com','sami.kobayter@gmail.com','ca.recruits22@gmail.com','gabriela-olivan@hotmail.com','elohimrocha@hotmail.com','ca_carmona2003@yahoo.com.mx','celebrityproperties@gmail.com','tbecker@best-group.eu')";
 params = Map();
