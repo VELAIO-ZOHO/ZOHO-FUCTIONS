@@ -1,0 +1,29 @@
+/* 
+This fuction will be update the deals and client that have client status null to | no deposit - Active
+VELAIO jmartinez@velaio.com 3 - 07 - 2024
+*/
+
+deals = zoho.crm.getRecords("Deals");
+
+update_list_deals  =  List(); 
+update_list_client = List();
+for each deal in deals
+{
+	deal_status = deal.get("Client_Status");
+	client_id = deal.get("Contact_Name").get("id");
+	deal_id = deal.get("id");
+	
+	if ( deal_status == null ) 
+	{
+			record_map =  {"id":deal_id,  "Client_Status":"no deposit - Active"};
+			update_list_deals.add(record_map);
+			
+			record_map_client =  {"id":client_id,  "Client_Status":"no deposit - Active"};
+			update_list_client.add(record_map_client);
+    }
+
+}
+deal_info = zoho.crm.bulkUpdate("Deals", update_list_deals);
+info deal_info;
+client_info = zoho.crm.bulkUpdate("Contacts", update_list_client);
+info client_info;
